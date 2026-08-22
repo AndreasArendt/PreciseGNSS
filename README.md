@@ -29,8 +29,8 @@ ctest --preset debug
 
 - [`CMakeLists.txt`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/CMakeLists.txt): root build definition
 - [`CMakePresets.json`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/CMakePresets.json): reusable debug and release presets
-- [`include/gnss_rtk/wgs84.hpp`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/include/gnss_rtk/wgs84.hpp): starter public API
-- [`src/wgs84.cpp`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/src/wgs84.cpp): WGS84 conversions and GTSAM bridge
+- `include/gnss_rtk/coordinates/wgs84.hpp`: starter public API
+- `src/coordinates/wgs84.cpp`: WGS84 conversions and GTSAM bridge
 - [`examples/wgs84_demo.cpp`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/examples/wgs84_demo.cpp): simple executable
 - [`tests/wgs84_test.cpp`](/C:/Users/andia/Documents/Codex/2026-08-22/ple/tests/wgs84_test.cpp): round-trip sanity test
 

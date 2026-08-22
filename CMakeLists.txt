@@ -12,7 +12,23 @@ option(GNSS_RTK_BUILD_TESTS "Build test targets" ON)
 find_package(GTSAM REQUIRED)
 
 add_library(gnss_rtk STATIC
-    src/wgs84.cpp
+    src/coordinates/wgs84.cpp
+    src/coordinates/transformation.cpp
+    src/core/abstract_satellite.cpp
+    src/core/epoch.cpp
+    src/navigation/ephemeris.cpp
+    src/navigation/galileo_ephemeris.cpp
+    src/navigation/gps_ephemeris.cpp
+    src/navigation/kepler_orbit.cpp
+    src/rinex/AbstractRinexParser.cpp
+    src/rinex/NavData/Galileo/GalileoNavData.cpp
+    src/rinex/NavData/Gps/GpsNavData.cpp
+    src/rinex/NavData/NavData.cpp
+    src/rinex/ObsData/ObsData.cpp
+    src/rinex/RinexNavParser/RinexNavParser.cpp
+    src/rinex/RinexObsParser/RinexObsParser.cpp
+    src/rinex/RinexParser.cpp
+    src/rinex/RinexTypes/Satellite.cpp
 )
 
 target_include_directories(gnss_rtk
