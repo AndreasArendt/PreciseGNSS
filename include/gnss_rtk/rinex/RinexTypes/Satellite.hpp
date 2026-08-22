@@ -4,6 +4,7 @@
 #include "gnss_rtk/navigation/ephemeris.hpp"
 #include "gnss_rtk/rinex/NavData/NavData.hpp"
 #include "gnss_rtk/rinex/ObsData/ObsData.hpp"
+#include "gnss_rtk/rinex/Observations.hpp"
 
 #include <format>
 #include <string>
@@ -20,7 +21,7 @@ private:
 	NavData* findClosestTime(double targetTime);
 
 	//private functions
-	double CalcSatelliteTxTime(double time, CodeObservation& cObs);
+	double CalcSatelliteTxTime(double time, Rinex::Observation::Code& cObs);	
 	void addEphemeris(ObservationBand band, std::unique_ptr<Ephemeris> ephemeris);
 
 public:

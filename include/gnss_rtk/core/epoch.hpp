@@ -14,7 +14,7 @@ private:
 	int _day;
 	int _hour;
 	int _minute;
-	double _second;
+	double _second;	
 
 public:
 	// getters        

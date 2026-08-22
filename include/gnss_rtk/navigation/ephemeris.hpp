@@ -41,7 +41,7 @@ public:
 	virtual std::unique_ptr<Ephemeris> clone() const = 0;
 		
 	// cotr & dtor
-	Ephemeris(SvHealth svHealth) : _SatelliteClockError__s(0), _SatelliteClockDrift__1Ds(0), _RelativisticError__s(0), _Utc__s(0), _Toe__s(0), _Obstime__s(0), _SvHealth(svHealth)	{};
+	Ephemeris(SvHealth svHealth) : _Position_E{}, _Velocity_E{}, _SvHealth(svHealth), _SatelliteClockError__s(0), _RelativisticError__s(0), _SatelliteClockDrift__1Ds(0),  _Utc__s(0), _Toe__s(0), _Obstime__s(0)	{};
 
 	virtual ~Ephemeris() = default;
 

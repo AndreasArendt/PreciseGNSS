@@ -1,14 +1,13 @@
 #pragma once
 
-#include "gnss_rtk/rinex/Observations/CodeObservation.hpp"
-#include "gnss_rtk/rinex/Observations/PhaseObservation.hpp"
-#include "gnss_rtk/rinex/Observations/DopplerObservation.hpp"
-#include "gnss_rtk/rinex/Observations/SignalStrengthObservation.hpp"
+#include "gnss_rtk/rinex/Observations.hpp"
 #include "gnss_rtk/rinex/RinexTypes/ObservationBand.hpp"
 #include "gnss_rtk/rinex/RinexData.hpp"
 #include "gnss_rtk/core/epoch.hpp"
 
 #include <map>
+
+using namespace Rinex::Observation;
 
 class ObsData : public RinexData
 {
@@ -16,17 +15,17 @@ private:
     int _EpochFlag;    
     bool _IsSpecialEvent;
 
-    std::map<ObservationBand, CodeObservation> _CodeObservations;
-    std::map<ObservationBand, PhaseObservation> _PhaseObservations;
-    std::map<ObservationBand, DopplerObservation> _DopplerObservations;
-    std::map<ObservationBand, SignalStrengthObservation> _SnrObservations;
+    std::map<ObservationBand, Code> _CodeObservations;
+    std::map<ObservationBand, CarrierPhase> _PhaseObservations;
+    std::map<ObservationBand, Doppler> _DopplerObservations;
+    std::map<ObservationBand, SignalStrength> _SnrObservations;
 
 public:
     // getters            
-    std::map<ObservationBand, CodeObservation> const& CodeObservations() const { return this->_CodeObservations; }
-    std::map<ObservationBand, PhaseObservation> const& PhaseObservations() const { return this->_PhaseObservations; }
-    std::map<ObservationBand, DopplerObservation> const& DopplerObservations() const { return this->_DopplerObservations; }
-    std::map<ObservationBand, SignalStrengthObservation> const& SnrObservations() const { return this->_SnrObservations; }
+    std::map<ObservationBand, Code> const& CodeObservations() const { return this->_CodeObservations; }
+    std::map<ObservationBand, CarrierPhase> const& PhaseObservations() const { return this->_PhaseObservations; }
+    std::map<ObservationBand, Doppler> const& DopplerObservations() const { return this->_DopplerObservations; }
+    std::map<ObservationBand, SignalStrength> const& SnrObservations() const { return this->_SnrObservations; }
     bool const& IsSpecialEvent() const { return this->_IsSpecialEvent; }        
     
     // functions

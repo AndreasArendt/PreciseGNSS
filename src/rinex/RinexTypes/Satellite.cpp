@@ -33,9 +33,9 @@ void Satellite::addObsData(ObsData obsdata)
 	this->_ObservationData.push_back(obsdata);
 }
 
-double Satellite::CalcSatelliteTxTime(double time, CodeObservation& cObs)
+double Satellite::CalcSatelliteTxTime(double time, Rinex::Observation::Code& cObs)
 {
-	return time - cObs.Pseudorange__m() / Transformation::SpeedOfLight__mDs;
+	return time - cObs.pseudorange_m / Transformation::SpeedOfLight__mDs;
 }
 
 NavData* Satellite::findClosestTime(double targetTime)
@@ -77,7 +77,7 @@ void Satellite::calcEphemeris()
 					auto eph = std::make_unique<GalileoEphemeris>(svHealth);
 					
 					// transmission time correction
-					double transmission_time__s = code.Pseudorange__m() / Transformation::SpeedOfLight__mDs;
+					double transmission_time__s = code.pseudorange_m / Transformation::SpeedOfLight__mDs;
 					time = time - transmission_time__s;
 					time = time - eph->CalcClockOffset(*nav, time);
 
@@ -104,7 +104,7 @@ void Satellite::calcEphemeris()
 					auto eph = std::make_unique<GpsEphemeris>(svHealth);
 
 					// transmission time correction
-					double transmission_time__s = code.Pseudorange__m() / Transformation::SpeedOfLight__mDs;
+					double transmission_time__s = code.pseudorange_m / Transformation::SpeedOfLight__mDs;
 					time = time - transmission_time__s;
 					time = time - eph->CalcClockOffset(*nav, time);
 
