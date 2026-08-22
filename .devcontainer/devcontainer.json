@@ -22,7 +22,8 @@
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools-extension-pack",
         "twxs.cmake",
-        "xaver.clang-format"
+        "xaver.clang-format",
+        "openai.chatgpt"
       ]
     }
   },

@@ -5,6 +5,7 @@ USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ccache \
+        curl \
         clang-format \
         gdb \
         libboost-chrono-dev \
@@ -32,3 +33,8 @@ RUN apt-get update \
 RUN ar rcs /usr/lib/x86_64-linux-gnu/libCppUnitLite.a
 
 USER vscode
+
+# Install Codex for the interactive, non-root devcontainer user.
+RUN curl -fsSL https://chatgpt.com/codex/install.sh | sh
+
+ENV PATH="/home/vscode/.local/bin:${PATH}"

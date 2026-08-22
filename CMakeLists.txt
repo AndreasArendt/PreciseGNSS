@@ -60,10 +60,18 @@ endif()
 if(GNSS_RTK_BUILD_TESTS)
     enable_testing()
 
-    add_executable(wgs84_test
-        tests/wgs84_test.cpp
+    # Each source file in tests/ is a standalone executable. This keeps small
+    # algorithm experiments easy to add without requiring a unit-test framework
+    # or another CMake edit. Register only actual automated tests with add_test.
+    file(GLOB GNSS_RTK_TEST_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
     )
-    target_link_libraries(wgs84_test PRIVATE gnss_rtk)
+
+    foreach(test_source IN LISTS GNSS_RTK_TEST_SOURCES)
+        get_filename_component(test_target "${test_source}" NAME_WE)
+        add_executable("${test_target}" "${test_source}")
+        target_link_libraries("${test_target}" PRIVATE gnss_rtk)
+    endforeach()
 
     add_test(NAME wgs84_roundtrip COMMAND wgs84_test)
 endif()
