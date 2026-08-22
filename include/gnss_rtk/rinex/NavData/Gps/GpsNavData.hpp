@@ -113,9 +113,7 @@ public:
 
 	//functions
 	void AddClockErrors(double data0, double data1, double data2);
-	double ToeEpoch();
-
-	std::unique_ptr<NavData> clone() const override;
+	double ToeEpoch() const;
 
 	// ctor & dtor
 	GpsNavData(int year, int month, int day, int hour, int minute, double second);

@@ -9,19 +9,17 @@
 #include "gnss_rtk/rinex/RinexTypes/ObservationType.hpp"
 #include "gnss_rtk/rinex/RinexTypes/ObservationBand.hpp"
 #include "gnss_rtk/rinex/RinexTypes/ObservationAttribute.hpp"
-#include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
 #include "gnss_rtk/rinex/Observations.hpp"
 #include "gnss_rtk/rinex/detail/string_utils.hpp"
 #include "gnss_rtk/rinex/detail/line_reader.hpp"
-#include "gnss_rtk/rinex/detail/satellite_lookup.hpp"
 
 #include <utility>
+#include <iostream>
 
-void RinexObsParser::FindCurrentSatellite(Satellite satellite)
-{
-    this->_CurrentSatellite = &gnss_rtk::rinex::detail::find_or_add_satellite(
-        this->_Satellites, std::move(satellite));
-}
+const std::string RINEX_VERSION_DEFINITION = "RINEX VERSION / TYPE";
+const std::string RINEX_APPROX_POSITION_DEFINITION = "APPROX POSITION XYZ";
+const std::string RINEX_ANTENNA_DELTA_DEFINITION  ="ANTENNA: DELTA H/E/N";
+const std::string RINEX_OBS_TYPE_DEFINITION = "SYS / # / OBS TYPES";
 
 void RinexObsParser::Parse(std::istream& input)
 {
@@ -29,16 +27,6 @@ void RinexObsParser::Parse(std::istream& input)
     gnss_rtk::rinex::detail::for_each_line(input, [this](std::string line) {
         this->ParseLine(std::move(line));
     });
-}
-
-#define RINEX_VERSION_DEFINITION "RINEX VERSION / TYPE"
-#define RINEX_APPROX_POSITION_DEFINITION "APPROX POSITION XYZ"
-#define RINEX_ANTENNA_DELTA_DEFINITION "ANTENNA: DELTA H/E/N"
-#define RINEX_OBS_TYPE_DEFINITION "SYS / # / OBS TYPES"
-
-RinexObsParser::~RinexObsParser()
-{
-    this->_ObservationDefinitions.clear();
 }
 
 void RinexObsParser::ReadEpochHeader(std::string line)
@@ -59,11 +47,13 @@ void RinexObsParser::ReadEpochHeader(std::string line)
         int hour = util::astring::parseInt(line.substr(13, 2));
         int minute = util::astring::parseInt(line.substr(16, 2));
         double second = util::astring::parseDouble(line.substr(19, 10));
-        this->_CurrentEpochFlag = util::astring::parseInt(line.substr(31, 1)); // 0: OK; 1: power failure between current and previous epoch; >1 Special Event
+        int epochFlag = util::astring::parseInt(line.substr(31, 1)); // 0: OK; 1: power failure between current and previous epoch; >1 Special Event
         // int numberSVs = parseInt(line.substr(33, 2));
 
         // Create new Epoch object and add it to the _Epochs vector
-        this->_CurrentEpoch = Epoch(year, month, day, hour, minute, second);
+        Epoch epoch = Epoch(year, month, day, hour, minute, second);
+
+        this->_Epochs.emplace_back(ObservationEpoch {.time = epoch, .flag = epochFlag, .satellites{} });
     }
     catch (const std::exception &e)
     {
@@ -74,15 +64,19 @@ void RinexObsParser::ReadEpochHeader(std::string line)
 
 void RinexObsParser::ReadEpochObservation(std::string line)
 {
-    auto satellite = Satellite(line.substr(0, 3));
-    const auto &SvObsDefinitions = _ObservationDefinitions.at(satellite.SVSystem());
+    auto satellite = SatelliteId(line.substr(0, 3));
 
-    this->FindCurrentSatellite(satellite);
-    this->_CurrentObsData = ObsData(this->_CurrentEpoch, this->_CurrentEpochFlag);
+    this->_Epochs.back().satellites.emplace_back(SatelliteObservation{
+        .satellite = satellite,
+        .CodeObservations = {},
+        .PhaseObservations = {},
+        .DopplerObservations = {},
+        .SnrObservations = {},
+    });
 
     // See 6.7 in rinex standard how observations are formatted
     unsigned int StartIndex = 3; // offset of first observation
-    for (const auto &obsDef : SvObsDefinitions)
+    for (const auto &obsDef : _ObservationDefinitions.at(satellite.SVSystem()))
     {
         // less data avaibale in observation as in specified Header
         if (line.length() < StartIndex + 14)
@@ -104,25 +98,29 @@ void RinexObsParser::ReadEpochObservation(std::string line)
         case ObservationType::Code: // Pseudorange
         {
             double psuedorange = util::astring::parseDouble(data);
-            this->_CurrentObsData.AddCodeObservation(obsDef.GetObservationBand(), psuedorange);
+            this->_Epochs.back().satellites.back().CodeObservations.emplace(obsDef.GetObservationBand(), psuedorange);
+
             break;
         }
         case ObservationType::Phase: // Carrierphase
         {
             double cycles = util::astring::parseDouble(data);
-            this->_CurrentObsData.AddPhaseObservation(obsDef.GetObservationBand(), cycles);
+            this->_Epochs.back().satellites.back().PhaseObservations.emplace(obsDef.GetObservationBand(), cycles);
+
             break;
         }
         case ObservationType::Doppler:
         {
             double doppler = util::astring::parseDouble(data);
-            this->_CurrentObsData.AddDopplerObservation(obsDef.GetObservationBand(), doppler);
+            this->_Epochs.back().satellites.back().DopplerObservations.emplace(obsDef.GetObservationBand(), doppler);
+
             break;
         }
         case ObservationType::RawSignalStrength:
         {
             double snr = util::astring::parseDouble(data);
-            this->_CurrentObsData.AddSnrObservation(obsDef.GetObservationBand(), snr);
+            this->_Epochs.back().satellites.back().SnrObservations.emplace(obsDef.GetObservationBand(), snr);
+
             break;
         }
         case ObservationType::ReceiverChannelNumber:
@@ -135,9 +133,6 @@ void RinexObsParser::ReadEpochObservation(std::string line)
 
         StartIndex += 16;
     }
-
-    // TODO: only add obsData if at least one observation in rinex file!
-    this->CurrentSatellite()->addObsData(this->_CurrentObsData);
 }
 
 void RinexObsParser::ReadObservationTypes(std::string line)
@@ -227,7 +222,7 @@ void RinexObsParser::ParseLine(std::string line)
             this->ReadEpochHeader(line);
 
             // Check if current Epoch is Special Event
-            if (this->_CurrentEpochFlag > 1)
+            if(this->_Epochs.back().flag > 1)
             {
                 _RinexParserState = RinexParserState::PARSE_HEADER; // TODO AA: currently no handling for special events!
             }

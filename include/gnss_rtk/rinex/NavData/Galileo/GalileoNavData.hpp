@@ -112,10 +112,8 @@ public:
 
 	// functions
 	void AddClockErrors(double data0, double data1, double data2);	
-	double getGST();
-	double ToeEpoch();
-		
-	std::unique_ptr<NavData> clone() const override;
+	double getGST() const;
+	double ToeEpoch() const;
 
 	GalileoNavData(int year, int month, int day, int hour, int minute, double second);
 	~GalileoNavData();

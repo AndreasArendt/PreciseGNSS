@@ -1,24 +1,12 @@
 #pragma once
 
-#include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
+#include "gnss_rtk/rinex/RinexFile.hpp"
 
-#include <vector>
+#include <filesystem>
 #include <string>
 
 class RinexParser
 {
-private:
-	std::vector<Satellite> _Satellites;
-
-public:			
-	// getters
-	std::vector<Satellite> const& Satellites() const { return this->_Satellites; }
-
-	// public functions
-	void Parse(std::string path);
-
-	//ctor & dtor
-	~RinexParser() = default;
-	RinexParser() = default;
+public:
+	RinexFile Parse(const std::filesystem::path& path) const;
 };
-

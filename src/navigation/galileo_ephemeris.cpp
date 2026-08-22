@@ -7,20 +7,12 @@
 #include <cmath>
 #include <chrono>
 
-#include <iostream>
-
 GalileoEphemeris::GalileoEphemeris(GalileoSvHealth svHealth) : Ephemeris(static_cast<SvHealth>(svHealth))
 {
 }
 
-GalileoEphemeris::~GalileoEphemeris()
+double GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, double time)
 {
-}
-
-double GalileoEphemeris::CalcClockOffset(NavData& navData, double time)
-{
-	auto nav = dynamic_cast<GalileoNavData&>(navData);
-
 	// apply clock correction - taken from RTKLIB eph2clk
 	double t = time - nav.Epoche().PosixEpochTime__s();
 	double ts = t;
@@ -35,10 +27,8 @@ double GalileoEphemeris::CalcClockOffset(NavData& navData, double time)
 	return this->_SatelliteClockError__s;
 }
 
-void GalileoEphemeris::CalcEphemeris(NavData& navData, double time, double obstime)
+void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, double time, double obstime)
 {
-	auto nav = dynamic_cast<GalileoNavData&>(navData);
-	
 	KeplerOrbitData orbitData =
 	{
 		.SqrtA___sqrtm = nav.SqrtA___sqrtm(),
@@ -74,9 +64,4 @@ void GalileoEphemeris::CalcEphemeris(NavData& navData, double time, double obsti
 void GalileoEphemeris::CalcVelocity()
 {
 
-}
-
-std::unique_ptr<Ephemeris> GalileoEphemeris::clone() const
-{
-	return std::make_unique<GalileoEphemeris>(*this);
 }

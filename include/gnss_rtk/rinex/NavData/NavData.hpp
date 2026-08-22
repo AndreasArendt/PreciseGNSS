@@ -4,9 +4,6 @@
 #include "gnss_rtk/rinex/RinexData.hpp"
 
 
-#include <memory>
-#include <chrono>
-
 class NavData : public RinexData
 {
 protected:
@@ -28,8 +25,5 @@ public:
 	NavData() = default;
 	NavData(int year, int month, int day, int hour, int minute, double second);			
 	virtual ~NavData() = default;	
-
-	// utils
-	virtual std::unique_ptr<NavData> clone() const = 0;
 };
 

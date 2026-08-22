@@ -10,11 +10,6 @@ GpsNavData::~GpsNavData()
 
 }
 
-std::unique_ptr<NavData> GpsNavData::clone() const 
-{
-	return std::make_unique<GpsNavData>(*this);
-}
-
 void GpsNavData::AddClockErrors(double data0, double data1, double data2) 
 {
 	_SV_ClockBias__s = data0;
@@ -78,7 +73,7 @@ void GpsNavData::AddOrbit_7(double data0, double data1, double data2, double dat
 	_Spare1 = data3;
 }
 
-double GpsNavData::ToeEpoch()
+double GpsNavData::ToeEpoch() const
 {
 	double t__s = 315964800.00000000; // Sunday, 6. January 1980 00:00:00 (GPS time 0)
 

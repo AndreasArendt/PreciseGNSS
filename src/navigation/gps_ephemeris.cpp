@@ -7,14 +7,8 @@ GpsEphemeris::GpsEphemeris(GpsSvHealth svHealth) : Ephemeris(static_cast<SvHealt
 {
 }
 
-GpsEphemeris::~GpsEphemeris()
+double GpsEphemeris::CalcClockOffset(const GpsNavData& nav, double time)
 {
-}
-
-double GpsEphemeris::CalcClockOffset(NavData& navData, double time)
-{
-	auto nav = dynamic_cast<GpsNavData&>(navData);
-
 	// apply clock correction - taken from RTKLIB eph2clk
 	double t = time - nav.Epoche().PosixEpochTime__s();
 	double ts = t;
@@ -29,10 +23,8 @@ double GpsEphemeris::CalcClockOffset(NavData& navData, double time)
 	return this->_SatelliteClockError__s;
 }
 
-void GpsEphemeris::CalcEphemeris(NavData& navData, double time, double obstime)
+void GpsEphemeris::CalcEphemeris(const GpsNavData& nav, double time, double obstime)
 {
-	auto nav = dynamic_cast<GpsNavData&>(navData);
-
 	KeplerOrbitData orbitData =
 	{
 		.SqrtA___sqrtm = nav.SqrtA___sqrtm(),
@@ -68,9 +60,4 @@ void GpsEphemeris::CalcEphemeris(NavData& navData, double time, double obstime)
 void GpsEphemeris::CalcVelocity()
 {
 
-}
-
-std::unique_ptr<Ephemeris> GpsEphemeris::clone() const
-{
-	return std::make_unique<GpsEphemeris>(*this);
 }

@@ -2,11 +2,9 @@
 
 #include "gnss_rtk/coordinates/ecef_position.hpp"
 #include "gnss_rtk/coordinates/ecef_velocity.hpp"
-#include "gnss_rtk/rinex/NavData/NavData.hpp"
 #include "gnss_rtk/rinex/NavData/SvHealth.hpp"
 
 #include <math.h>
-#include <memory>
 #include <vector>
 
 class Ephemeris
@@ -35,15 +33,10 @@ public:
 	double const& Obstime__s() const { return this->_Obstime__s; }
 	SvHealth const& SatelliteHealth() const { return this->_SvHealth; }
 
-	// functions	
-	virtual void CalcEphemeris(NavData& navData, double time, double obstime) = 0;
-	virtual double CalcClockOffset(NavData& navData, double time) = 0;
-	virtual std::unique_ptr<Ephemeris> clone() const = 0;
-		
 	// cotr & dtor
 	Ephemeris(SvHealth svHealth) : _Position_E{}, _Velocity_E{}, _SvHealth(svHealth), _SatelliteClockError__s(0), _RelativisticError__s(0), _SatelliteClockDrift__1Ds(0),  _Utc__s(0), _Toe__s(0), _Obstime__s(0)	{};
 
-	virtual ~Ephemeris() = default;
+	~Ephemeris() = default;
 
 	// operator overloading
 	Ephemeris& operator=(Ephemeris& rhs);

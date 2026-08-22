@@ -9,11 +9,6 @@ GalileoNavData::~GalileoNavData()
 
 }
 
-std::unique_ptr<NavData> GalileoNavData::clone() const
-{
-	return std::make_unique<GalileoNavData>(*this);
-}
-
 void GalileoNavData::AddClockErrors(double data0, double data1, double data2)
 {
 	_SV_ClockBias__s = data0;
@@ -77,7 +72,7 @@ void GalileoNavData::AddOrbit_7(double data0, double data1, double data2, double
 	_Spare3 = 0.0;
 }
 
-double GalileoNavData::getGST()
+double GalileoNavData::getGST() const
 {	
 	double total_seconds = (this->_GalWeek * 604800) + this->_Toe__s;
 	double offset_GPSTIME_seconds = 619315200; // 18 leap seconds not included (for UTC conversion!)
@@ -86,7 +81,7 @@ double GalileoNavData::getGST()
 	return GST__s;
 }
 
-double GalileoNavData::ToeEpoch()
+double GalileoNavData::ToeEpoch() const
 {
 	double t__s = 315964800.00000000; // Sunday, 6. January 1980 00:00:00 (GPS time 0)
 
