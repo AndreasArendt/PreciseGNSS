@@ -1,0 +1,31 @@
+{
+  "name": "gnss-rtk-dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "vscode",
+  "runArgs": [
+    "--init"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "cmake.useCMakePresets": "always",
+        "cmake.configureOnOpen": true,
+        "cmake.defaultConfigurePreset": "debug",
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools-extension-pack",
+        "twxs.cmake",
+        "xaver.clang-format"
+      ]
+    }
+  },
+  "postCreateCommand": "cmake --preset debug",
+  "postAttachCommand": "printf '\\nWorkspace ready. Use cmake --build --preset debug and ctest --preset debug.\\n'"
+}
