@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gnss_rtk/rinex/AbstractRinexParser.hpp"
+#include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
 #include "gnss_rtk/rinex/RinexTypes/IonosphericCorrection.hpp"
 #include "gnss_rtk/rinex/RinexTypes/TimeSystemCorrection.hpp"
 #include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
@@ -9,8 +9,9 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <istream>
 
-class RinexNavParser : virtual public AbstractRinexParser
+class RinexNavParser
 {
 private:
 	std::string _Version;
@@ -23,6 +24,11 @@ private:
 
 	ENavOrbitNumber _CurrentOrbitNumber = ENavOrbitNumber::ORBIT_UNKNOWN;	
 	std::unique_ptr<NavData> _CurrentNavData;
+	std::vector<Satellite>& _Satellites;
+	Satellite* _CurrentSatellite = nullptr;
+
+	Satellite* CurrentSatellite() const { return _CurrentSatellite; }
+	void FindCurrentSatellite(Satellite satellite);
 	
 	void ParseEpoch(std::string line);	
 	void ParseLine(std::string line);
@@ -38,10 +44,11 @@ public:
 	std::vector<TimeSystemCorrection> const& TimeSystemCorrections() const { return this->_TimeSystemCorrections; }
 	
 	// ctor & dtor	
-	RinexNavParser(std::vector<Satellite>& satellites) : AbstractRinexParser(satellites) {};
+	explicit RinexNavParser(std::vector<Satellite>& satellites) : _Satellites(satellites) {}
 	~RinexNavParser();
 
 	// public function
 	void InitParser();
+	void Parse(std::istream& input);
 };
 

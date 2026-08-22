@@ -12,8 +12,24 @@
 #include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
 #include "gnss_rtk/rinex/Observations.hpp"
 #include "gnss_rtk/rinex/detail/string_utils.hpp"
+#include "gnss_rtk/rinex/detail/line_reader.hpp"
+#include "gnss_rtk/rinex/detail/satellite_lookup.hpp"
 
 #include <utility>
+
+void RinexObsParser::FindCurrentSatellite(Satellite satellite)
+{
+    this->_CurrentSatellite = &gnss_rtk::rinex::detail::find_or_add_satellite(
+        this->_Satellites, std::move(satellite));
+}
+
+void RinexObsParser::Parse(std::istream& input)
+{
+    this->InitParser();
+    gnss_rtk::rinex::detail::for_each_line(input, [this](std::string line) {
+        this->ParseLine(std::move(line));
+    });
+}
 
 #define RINEX_VERSION_DEFINITION "RINEX VERSION / TYPE"
 #define RINEX_APPROX_POSITION_DEFINITION "APPROX POSITION XYZ"

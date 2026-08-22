@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "gnss_rtk/rinex/AbstractRinexParser.hpp"
+#include "gnss_rtk/rinex/RinexTypes/Satellite.hpp"
 #include "gnss_rtk/rinex/RinexTypes/ObservationDefinition.hpp"
 #include "gnss_rtk/rinex/RinexObsParser/RinexReaderState.hpp"
 #include "gnss_rtk/coordinates/position.hpp"
@@ -17,8 +17,9 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <istream>
 
-class RinexObsParser : virtual public AbstractRinexParser {
+class RinexObsParser {
     
 private:    
     void ReadEpochHeader(std::string line);
@@ -34,6 +35,11 @@ private:
     Epoch _CurrentEpoch;
     ObsData _CurrentObsData;
     int _CurrentEpochFlag;
+    std::vector<Satellite>& _Satellites;
+    Satellite* _CurrentSatellite = nullptr;
+
+    Satellite* CurrentSatellite() const { return _CurrentSatellite; }
+    void FindCurrentSatellite(Satellite satellite);
     
 public:
     //getters    
@@ -42,9 +48,11 @@ public:
     Position const& AntennaOffset() const { return _AntennaOffset; }
         
     // ctor & dtor
-    RinexObsParser(std::vector<Satellite>& satellites) : AbstractRinexParser(satellites), _CurrentEpochFlag(-1) {};
+    explicit RinexObsParser(std::vector<Satellite>& satellites)
+        : _CurrentEpochFlag(-1), _Satellites(satellites) {}
     ~RinexObsParser();
         
     //functions
     void InitParser();
+    void Parse(std::istream& input);
 };

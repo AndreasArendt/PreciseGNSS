@@ -3,32 +3,28 @@
 #include "gnss_rtk/rinex/RinexObsParser/RinexObsParser.hpp"
 
 #include <fstream>
-#include <iostream>
-
-std::unique_ptr<AbstractRinexParser> RinexParser::GetParser(std::string path)
-{	
-	std::ifstream infile(path);
-	std::string firstline;
-	std::getline(infile, firstline);
-		
-	if ((firstline.find("NAVIGATION DATA") != std::string::npos) ||
-		(firstline.find("NAV DATA") != std::string::npos))
-	{		
-		return std::make_unique<RinexNavParser>(this->_Satellites);		
-	}
-	else if (firstline.find("OBSERVATION DATA") != std::string::npos)
-	{
-		return std::make_unique<RinexObsParser>(this->_Satellites);
-	}
-	else
-	{
-		std::cout << "Unknown Filetype" << std::endl;
-		return nullptr;
-	}
-}
+#include <stdexcept>
 
 void RinexParser::Parse(std::string path)
-{	
-	this->_RinexParser = this->GetParser(path);
-	this->_RinexParser->Parse(path);
+{
+    std::ifstream input(path);
+    if (!input) {
+        throw std::runtime_error("Could not open RINEX file: " + path);
+    }
+
+    std::string first_line;
+    std::getline(input, first_line);
+    input.clear();
+    input.seekg(0);
+
+    if ((first_line.find("NAVIGATION DATA") != std::string::npos) ||
+        (first_line.find("NAV DATA") != std::string::npos)) {
+        RinexNavParser parser(this->_Satellites);
+        parser.Parse(input);
+    } else if (first_line.find("OBSERVATION DATA") != std::string::npos) {
+        RinexObsParser parser(this->_Satellites);
+        parser.Parse(input);
+    } else {
+        throw std::runtime_error("Unknown RINEX file type: " + path);
+    }
 }

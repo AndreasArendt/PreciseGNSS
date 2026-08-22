@@ -1,5 +1,7 @@
 #include "gnss_rtk/rinex/RinexNavParser/RinexNavParser.hpp"
 #include "gnss_rtk/rinex/detail/string_utils.hpp"
+#include "gnss_rtk/rinex/detail/line_reader.hpp"
+#include "gnss_rtk/rinex/detail/satellite_lookup.hpp"
 #include "gnss_rtk/rinex/RinexTypes/IonosphericCorrectionParameter.hpp"
 #include "gnss_rtk/rinex/RinexTypes/TimeDifferenceType.hpp"
 #include "gnss_rtk/rinex/NavData/Gps/GpsNavData.hpp"
@@ -9,6 +11,20 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+
+void RinexNavParser::FindCurrentSatellite(Satellite satellite)
+{
+	this->_CurrentSatellite = &gnss_rtk::rinex::detail::find_or_add_satellite(
+		this->_Satellites, std::move(satellite));
+}
+
+void RinexNavParser::Parse(std::istream& input)
+{
+	this->InitParser();
+	gnss_rtk::rinex::detail::for_each_line(input, [this](std::string line) {
+		this->ParseLine(std::move(line));
+	});
+}
 
 #define RINEX_VERSION_DEFINITION		  "RINEX VERSION / TYPE"
 #define RINEX_IONOSPHERIC_CORR_DEFINITION "IONOSPHERIC CORR"
