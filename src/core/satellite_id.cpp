@@ -1,6 +1,6 @@
-#include "gnss_rtk/core/satellite_id.hpp"
+#include "core/satellite_id.hpp"
 
-#include "gnss_rtk/rinex/detail/string_utils.hpp"
+#include "rinex/detail/string_utils.hpp"
 
 SatelliteId::SatelliteId() : _SvSystem(SvSystem::UNKNOWN), _SvNumber(-1)
 {

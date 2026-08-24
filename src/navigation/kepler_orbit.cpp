@@ -1,6 +1,6 @@
-#include "gnss_rtk/navigation/kepler_orbit.hpp"
+#include "navigation/kepler_orbit.hpp"
 
-#include "gnss_rtk/coordinates/transformation.hpp"
+#include "coordinates/transformation.hpp"
 
 #include <cmath>
 

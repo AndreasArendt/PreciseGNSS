@@ -1,4 +1,4 @@
-#include "gnss_rtk/core/epoch.hpp"
+#include "core/epoch.hpp"
 
 #include <cmath>
 #include <ctime>

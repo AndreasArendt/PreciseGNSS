@@ -19,11 +19,11 @@ add_library(gnss_rtk STATIC
     src/navigation/galileo_ephemeris.cpp
     src/navigation/gps_ephemeris.cpp
     src/navigation/kepler_orbit.cpp
-    src/rinex/NavData/Galileo/GalileoNavData.cpp
-    src/rinex/NavData/Gps/GpsNavData.cpp
+    src/rinex/NavData/GalileoNavData.cpp
+    src/rinex/NavData/GpsNavData.cpp
     src/rinex/NavData/NavData.cpp
-    src/rinex/RinexNavParser/RinexNavParser.cpp
-    src/rinex/RinexObsParser/RinexObsParser.cpp
+    src/rinex/RinexNavParser.cpp
+    src/rinex/RinexObsParser.cpp
     src/rinex/RinexParser.cpp
 )
 

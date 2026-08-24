@@ -2,7 +2,7 @@
 #include <iostream>
 #include <variant>
 
-#include "gnss_rtk/rinex/RinexParser.hpp"
+#include "rinex/RinexParser.hpp"
 
 int main(int argc, char *argv[])
 {

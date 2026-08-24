@@ -1,7 +1,7 @@
-#include "gnss_rtk/navigation/galileo_ephemeris.hpp"
-#include "gnss_rtk/coordinates/transformation.hpp"
-#include "gnss_rtk/navigation/kepler_orbit.hpp"
-#include "gnss_rtk/rinex/NavData/Galileo/GalileoNavData.hpp"
+#include "navigation/galileo_ephemeris.hpp"
+#include "coordinates/transformation.hpp"
+#include "navigation/kepler_orbit.hpp"
+#include "rinex/NavData/Galileo/GalileoNavData.hpp"
 
 #include <cmath>
 #include <chrono>

@@ -1,7 +1,7 @@
-#include "gnss_rtk/rinex/RinexParser.hpp"
+#include "rinex/RinexParser.hpp"
 
-#include "gnss_rtk/rinex/RinexNavParser/RinexNavParser.hpp"
-#include "gnss_rtk/rinex/RinexObsParser/RinexObsParser.hpp"
+#include "rinex/RinexNavParser/RinexNavParser.hpp"
+#include "rinex/RinexObsParser/RinexObsParser.hpp"
 
 #include <fstream>
 #include <stdexcept>

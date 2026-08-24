@@ -1,4 +1,4 @@
-#include "gnss_rtk/coordinates/wgs84.hpp"
+#include "coordinates/wgs84.hpp"
 
 #include <cmath>
 #include <cstdlib>

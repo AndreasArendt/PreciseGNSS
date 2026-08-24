@@ -1,6 +1,6 @@
-#include "gnss_rtk/navigation/gps_ephemeris.hpp"
-#include "gnss_rtk/rinex/NavData/Gps/GpsNavData.hpp"
-#include "gnss_rtk/navigation/kepler_orbit.hpp"
+#include "navigation/gps_ephemeris.hpp"
+#include "rinex/NavData/Gps/GpsNavData.hpp"
+#include "navigation/kepler_orbit.hpp"
 
 GpsEphemeris::GpsEphemeris(GpsSvHealth svHealth) : Ephemeris<GpsSvHealth>(svHealth)
 {
