@@ -2,12 +2,11 @@
 #include "gnss_rtk/coordinates/transformation.hpp"
 #include "gnss_rtk/navigation/kepler_orbit.hpp"
 #include "gnss_rtk/rinex/NavData/Galileo/GalileoNavData.hpp"
-#include "gnss_rtk/rinex/NavData/SvHealth.hpp"
 
 #include <cmath>
 #include <chrono>
 
-GalileoEphemeris::GalileoEphemeris(GalileoSvHealth svHealth) : Ephemeris(static_cast<SvHealth>(svHealth))
+GalileoEphemeris::GalileoEphemeris(GalileoSvHealth svHealth) : Ephemeris<GalileoSvHealth>(svHealth)
 {
 }
 

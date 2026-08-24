@@ -4,7 +4,7 @@
 #include "gnss_rtk/rinex/NavData/Gps/GpsNavData.hpp"
 #include "gnss_rtk/rinex/NavData/Gps/GpsSvHealth.hpp"
 
-class GpsEphemeris : public Ephemeris
+class GpsEphemeris : public Ephemeris<GpsSvHealth>
 {
 
 private:
@@ -16,5 +16,5 @@ public:
 
 	// ctor & dtor	
 	GpsEphemeris(GpsSvHealth svHealth);
-	~GpsEphemeris() = default;
+	~GpsEphemeris() override = default;		
 };

@@ -1,12 +1,13 @@
 #include "gnss_rtk/rinex/NavData/Galileo/GalileoNavData.hpp"
 
+#include <chrono>
+
 GalileoNavData::GalileoNavData(int year, int month, int day, int hour, int minute, double second) : NavData(year, month, day, hour, minute, second)
 {
 }
 
 GalileoNavData::~GalileoNavData()
 {
-
 }
 
 void GalileoNavData::AddClockErrors(double data0, double data1, double data2)
@@ -34,9 +35,9 @@ void GalileoNavData::AddOrbit_2(double data0, double data1, double data2, double
 
 void GalileoNavData::AddOrbit_3(double data0, double data1, double data2, double data3)
 {
-	_Toe__s = data0;
+	_Toe__s = Seconds{data0};
 	_Cic__rad = data1;
-	_Omega0__rad = data2; //OMEGA_0
+	_Omega0__rad = data2; // OMEGA_0
 	_Cis__rad = data3;
 }
 
@@ -44,15 +45,15 @@ void GalileoNavData::AddOrbit_4(double data0, double data1, double data2, double
 {
 	_i0__rad = data0;
 	_Crc__m = data1;
-	_Omega__rad = data2; //omega
-	_Omega_dot__radDs = data3; //OMEGA_DOT
+	_Omega__rad = data2;	   // omega
+	_Omega_dot__radDs = data3; // OMEGA_DOT
 }
 
-void GalileoNavData::AddOrbit_5(double data0, double data1, double data2, double data3)
+void GalileoNavData::AddOrbit_5(double data0, double data1, double data2, [[maybe_unused]] double data3)
 {
 	_Idot__radDs = data0;
 	_DataSources = data1;
-	_GalWeek = data2;
+	_GalWeek = std::chrono::weeks{static_cast<std::chrono::weeks::rep>(data2)};
 	_Spare0 = 0.0;
 }
 
@@ -64,7 +65,7 @@ void GalileoNavData::AddOrbit_6(double data0, double data1, double data2, double
 	_BGD_E5b_E1 = data3;
 }
 
-void GalileoNavData::AddOrbit_7(double data0, double data1, double data2, double data3)
+void GalileoNavData::AddOrbit_7(double data0, [[maybe_unused]] double data1, [[maybe_unused]] double data2, [[maybe_unused]] double data3)
 {
 	_TransmissiontimeOfMessage = data0;
 	_Spare1 = 0.0;
@@ -73,30 +74,34 @@ void GalileoNavData::AddOrbit_7(double data0, double data1, double data2, double
 }
 
 double GalileoNavData::getGST() const
-{	
-	double total_seconds = (this->_GalWeek * 604800) + this->_Toe__s;
-	double offset_GPSTIME_seconds = 619315200; // 18 leap seconds not included (for UTC conversion!)
-	double GST__s = total_seconds - offset_GPSTIME_seconds;
-		
-	return GST__s;
+{
+	constexpr auto gstEpochOffset = std::chrono::weeks{1024};
+	const auto gst = _GalWeek + _Toe__s - gstEpochOffset;
+	return std::chrono::duration_cast<Seconds>(gst).count();
 }
 
 double GalileoNavData::ToeEpoch() const
 {
-	double t__s = 315964800.00000000; // Sunday, 6. January 1980 00:00:00 (GPS time 0)
+	using Seconds = std::chrono::duration<double>;
+	using TimePoint = std::chrono::sys_time<Seconds>;
 
-	t__s += (time_t)86400 * 7 * this->_GalWeek + this->_Toe__s; //add GalWeek[s] and Toe[s]
+	constexpr auto gpsEpoch = std::chrono::sys_days{std::chrono::year{1980} / std::chrono::January / 6};
+	constexpr auto week = std::chrono::weeks{1};
+	constexpr auto halfWeek = std::chrono::days{3} + std::chrono::hours{12};
 
-	// Week adjustment
-	double tt = difftime(t__s, this->_Epoch.PosixEpochTime__s());
-	if (tt < -302400.0)
+	auto toe = TimePoint{gpsEpoch.time_since_epoch()} + this->_GalWeek + this->_Toe__s;
+
+	const auto epoch = TimePoint{Seconds{this->_Epoch.PosixEpochTime__s()}};
+	const auto difference = toe - epoch;
+
+	if (difference < -halfWeek)
 	{
-		t__s += 604800.0;
+		toe += week;
 	}
-	if (tt > 302400.0)
+	else if (difference > halfWeek)
 	{
-		t__s -= 604800.0;
+		toe -= week;
 	}
 
-	return t__s;
+	return toe.time_since_epoch().count();
 }

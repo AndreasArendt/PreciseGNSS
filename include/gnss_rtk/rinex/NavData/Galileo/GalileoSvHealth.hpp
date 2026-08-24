@@ -1,9 +1,10 @@
 #pragma once
 
-#include "gnss_rtk/rinex/NavData/SvHealth.hpp"
-
-class GalileoSvHealth : public SvHealth
+class GalileoSvHealth
 {
+private:
+    int _Health;
+
 public:
     struct
     {
@@ -15,7 +16,7 @@ public:
         unsigned int E5B_HS : 2;
     } bits = {};
 
-    int const &Health() const { return this->_Health; }
+    int Health() const { return this->_Health; }
 
     static GalileoSvHealth fromBitfield(double svHealth)
     {
@@ -30,8 +31,5 @@ public:
         result.bits.E5B_HS = (result._Health >> 7) & 0x3;
 
         return result;
-    }
-
-    GalileoSvHealth() : SvHealth() {}
-    ~GalileoSvHealth() {}
+    }    
 };

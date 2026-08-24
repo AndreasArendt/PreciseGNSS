@@ -6,11 +6,11 @@ class IonosphericCorrection
 {
 private:
 	IonosphericCorrectionParameter _IonosphericCorrectionParameter = IonosphericCorrectionParameter::IONOPARAM_UNKNOWN;
+	char _TimeMark = ' ';
 	double _alphabeta0 = 0.0;
 	double _alphabeta1 = 0.0;
 	double _alphabeta2 = 0.0;
 	double _alphabeta3 = 0.0;
-	char _TimeMark = ' ';
 
 public:
 	// getters

@@ -4,7 +4,7 @@
 #include "gnss_rtk/rinex/NavData/Galileo/GalileoNavData.hpp"
 #include "gnss_rtk/rinex/NavData/Galileo/GalileoSvHealth.hpp"
 
-class GalileoEphemeris : public Ephemeris
+class GalileoEphemeris : public Ephemeris<GalileoSvHealth>
 {   
 
 private:
@@ -16,5 +16,5 @@ public:
 
 	// ctor & dtor	
 	GalileoEphemeris(GalileoSvHealth svHealth);
-	~GalileoEphemeris() = default;
+	~GalileoEphemeris() override = default;	
 };
