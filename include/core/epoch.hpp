@@ -31,6 +31,11 @@ public:
 		return std::chrono::duration<double>(this->_EpochTime.time_since_epoch()).count();
 	}
 
+	std::chrono::system_clock::time_point EpochTime() const 
+	{
+		return  this->_EpochTime;
+	}
+
 	// ctor & dtor                
 	Epoch();
 	Epoch(int year, int month, int day, int hour, int minute, double second);

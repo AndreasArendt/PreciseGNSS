@@ -1,29 +1,81 @@
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
+#include <ranges>
 #include <variant>
 
+#include "coordinates/transformation.hpp"
 #include "rinex/RinexParser.hpp"
 
 int main(int argc, char *argv[])
 {
-    //const char *path = argc > 1 ? argv[1] : "/workspaces/PreciseGnss/data/FLY_0204.obs";
-    const char *path = argc > 1 ? argv[1] : "/workspaces/PreciseGnss/data/FLY_0204.nav";
-    const RinexFile file = RinexParser{}.Parse(path);
+    const std::filesystem::path observationPath = "/workspaces/PreciseGnss/data/AUBG00DEU_R_20262390000_01D_30S_MO.obs";
+    const std::filesystem::path navigationPath = "/workspaces/PreciseGnss/data/AUBG00DEU_R_20262390000_01D_MN.nav";
 
-    if (const auto *observations = std::get_if<ObservationFile>(&file))
+    RinexParser parser;
+    const RinexFile obsResult = parser.Parse(observationPath);
+    const RinexFile navResult = parser.Parse(navigationPath);
+
+    const auto *observations = std::get_if<ObservationFile>(&obsResult);
+    const auto *navigation = std::get_if<NavigationFile>(&navResult);
+
+    if (!observations)
     {
-        std::cout << "Observation epochs: " << observations->epochs.size() << '\n';
+        std::cerr << observationPath << " is not an observation file\n";
+        return EXIT_FAILURE;
     }
-    else if (const auto *navigation = std::get_if<NavigationFile>(&file))
+
+    if (!navigation)
     {
-        std::size_t messageCount = 0;
-        for (const auto &satellite : navigation->satellites)
-        {
-            messageCount += satellite.messages.size();
+        std::cerr << navigationPath << " is not a navigation file\n";
+        return EXIT_FAILURE;
+    }
+
+    std::size_t matchedObservations = 0;
+    std::size_t missingSatellites = 0;
+    std::size_t missingMessages = 0;
+
+    for (const ObservationEpoch &epoch : observations->epochs)
+    {
+        const double receptionTime = epoch.time.PosixEpochTime__s();
+
+        for (const SatelliteObservation &observation : epoch.satellites)
+        {                        
+            // find obs satellite in nav
+            const auto navSatellite = std::ranges::find(navigation->satellites, observation.satellite, &SatelliteNavigation::satellite);
+                   
+            // did not find any
+            if(navSatellite == navigation->satellites.end())                
+            {
+                ++missingSatellites;
+                continue;
+            }
+
+            if (observation.CodeObservations.empty())
+            {
+                continue;
+            }
+
+            const double pseudorange = observation.CodeObservations.begin()->second.pseudorange_m;
+            const double transmissionTime = receptionTime - pseudorange / Transformation::SpeedOfLight__mDs;
+
+            const NavigationMessage *message = navSatellite->FindMessage(transmissionTime);
+
+            if (!message)
+            {
+                ++missingMessages;
+                continue;
+            }
+
+            ++matchedObservations;
         }
-        std::cout << "Navigation satellites: " << navigation->satellites.size() << '\n'
-                  << "Navigation messages: " << messageCount << '\n';
     }
+
+    std::cout << "Observation epochs: " << observations->epochs.size() << '\n'
+              << "Navigation satellites: " << navigation->satellites.size() << '\n'
+              << "Matched observations: " << matchedObservations << '\n'
+              << "Missing satellites: " << missingSatellites << '\n'
+              << "Missing navigation messages: " << missingMessages << '\n';
 
     return EXIT_SUCCESS;
 }

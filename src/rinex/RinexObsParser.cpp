@@ -66,6 +66,16 @@ void RinexObsParser::ReadEpochObservation(std::string line)
 {
     auto satellite = SatelliteId(line.substr(0, 3));
 
+    // Filter active
+    switch (satellite.SVSystem())
+    {
+    case SvSystem::GALILEO:
+    case SvSystem::GPS:
+        break;
+    default:
+        return;
+    }
+
     this->_Epochs.back().satellites.emplace_back(SatelliteObservation{
         .satellite = satellite,
         .CodeObservations = {},

@@ -10,7 +10,7 @@ GalileoEphemeris::GalileoEphemeris(GalileoSvHealth svHealth) : Ephemeris<Galileo
 {
 }
 
-double GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, double time)
+void GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, double time)
 {
 	// apply clock correction - taken from RTKLIB eph2clk
 	double t = time - nav.Epoche().PosixEpochTime__s();
@@ -22,8 +22,7 @@ double GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, double time)
 	}
 
 	this->_SatelliteClockDrift__1Ds = nav.SV_ClockDrift__sDs();
-	this->_SatelliteClockError__s = nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t;	
-	return this->_SatelliteClockError__s;
+	this->_SatelliteClockError__s = nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t;		
 }
 
 void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, double time, double obstime)
@@ -63,4 +62,11 @@ void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, double time, dou
 void GalileoEphemeris::CalcVelocity()
 {
 
+}
+
+void GalileoEphemeris::Calculate(const GalileoNavData& navData, double time, double obstime)
+{
+	CalcClockOffset(navData, time);
+	time -= SatelliteClockError__s();
+	CalcEphemeris(navData, time, obstime);
 }
