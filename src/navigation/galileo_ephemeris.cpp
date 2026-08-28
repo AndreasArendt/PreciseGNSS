@@ -10,22 +10,24 @@ GalileoEphemeris::GalileoEphemeris(GalileoSvHealth svHealth) : Ephemeris<Galileo
 {
 }
 
-void GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, double time)
+void GalileoEphemeris::CalcClockOffset(const GalileoNavData& nav, navigation::GnssTime signalTime)
 {
-	// apply clock correction - taken from RTKLIB eph2clk
-	double t = time - nav.Epoche().PosixEpochTime__s();
-	double ts = t;
+	const navigation::ClockState reference = nav.ClockState();
+	const navigation::Seconds elapsed = navigation::Seconds{signalTime - nav.Epoche().Time()};
 
-	for (int i = 0; i < 2; i++)
+	navigation::Seconds correctedElapsed = elapsed;
+	for (int i = 0; i < 2; ++i)
 	{
-		t = ts - (nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t);
+		navigation::ClockState clock = reference;
+		clock.propagate(correctedElapsed);
+		correctedElapsed = elapsed - clock.bias;
 	}
 
-	this->_SatelliteClockDrift__1Ds = nav.SV_ClockDrift__sDs();
-	this->_SatelliteClockError__s = nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t;		
+	this->_ClockState = reference;
+	this->_ClockState.propagate(correctedElapsed);
 }
 
-void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, double time, double obstime)
+void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, navigation::GnssTime signalTime, navigation::GnssTime observationTime)
 {
 	KeplerOrbitData orbitData =
 	{
@@ -44,19 +46,19 @@ void GalileoEphemeris::CalcEphemeris(const GalileoNavData& nav, double time, dou
 		.Cic__rad = nav.Cic__rad(),
 		.i0__rad = nav.i0__rad(),
 		.Idot__radDs = nav.Idot__radDs(),
-		.ToeEpoch = nav.ToeEpoch(),
-		.Toe__s = nav.Toe__s()
+		.toeEpoch = nav.ToeEpoch(),
+		.toe = nav.Toe()
 	};
 
 	auto orbit = KeplerOrbit();
-	auto pos_vel = orbit.CalcEphemeris(orbitData, time, obstime);
+	auto pos_vel = orbit.CalcEphemeris(orbitData, signalTime, observationTime);
 	this->_Position_E = std::get<0>(pos_vel);
 	this->_Velocity_E = std::get<1>(pos_vel);
 	
-	this->_RelativisticError__s = orbit.RelativisticError__s();
-	this->_Utc__s = time;
-	this->_Toe__s = nav.ToeEpoch();
-	this->_Obstime__s = obstime;
+	this->_relativisticCorrection = orbit.RelativisticCorrection();
+	this->_signalTime = signalTime;
+	this->_toe = nav.ToeEpoch();
+	this->_observationTime = observationTime;
 }
 
 void GalileoEphemeris::CalcVelocity()
@@ -64,9 +66,9 @@ void GalileoEphemeris::CalcVelocity()
 
 }
 
-void GalileoEphemeris::Calculate(const GalileoNavData& navData, double time, double obstime)
+void GalileoEphemeris::Calculate(const GalileoNavData& navData, navigation::GnssTime signalTime, navigation::GnssTime observationTime)
 {
-	CalcClockOffset(navData, time);
-	time -= SatelliteClockError__s();
-	CalcEphemeris(navData, time, obstime);
+	CalcClockOffset(navData, signalTime);
+	signalTime -= std::chrono::round<navigation::GnssClock::duration>(this->ClockState().bias);
+	CalcEphemeris(navData, signalTime, observationTime);
 }

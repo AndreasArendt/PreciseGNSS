@@ -9,11 +9,11 @@ class GalileoEphemeris : public Ephemeris<GalileoSvHealth>
 
 private:
 	void CalcVelocity();
-	void CalcEphemeris(const GalileoNavData& navData, double time, double obstime);
-	void CalcClockOffset(const GalileoNavData& navData, double time);
+	void CalcEphemeris(const GalileoNavData& navData, navigation::GnssTime signalTime, navigation::GnssTime observationTime);
+	void CalcClockOffset(const GalileoNavData& navData, navigation::GnssTime signalTime);
 	
 public:
-	void Calculate(const GalileoNavData& navData, double time, double obstime);
+	void Calculate(const GalileoNavData& navData, navigation::GnssTime signalTime, navigation::GnssTime observationTime);
 
 	// ctor & dtor	
 	GalileoEphemeris(GalileoSvHealth svHealth);

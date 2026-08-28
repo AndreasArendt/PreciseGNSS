@@ -1,10 +1,9 @@
 #pragma once
 
 #include "rinex/NavData/ENavOrbitNumber.hpp"
-#include "rinex/RinexData.hpp"
+#include "core/epoch.hpp"
 
-
-class NavData : public RinexData
+class NavData
 {
 protected:
 	virtual void AddOrbit_1(double data0, double data1, double data2, double data3) = 0;
@@ -15,11 +14,16 @@ protected:
 	virtual void AddOrbit_6(double data0, double data1, double data2, double data3) = 0;
 	virtual void AddOrbit_7(double data0, double data1, double data2, double data3) = 0;
 
+	Epoch _Epoch;
+
 public:	
 	// functions
 	virtual void AddClockErrors(double data0, double data1, double data2) = 0;
 	
 	void AddOrbit(ENavOrbitNumber orbitNumber, double data0, double data1, double data2, double data3);
+
+	// getters
+	Epoch Epoche() const { return this->_Epoch; }
 
 	// ctor & dtor
 	NavData() = default;

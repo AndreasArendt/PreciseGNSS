@@ -1,20 +1,22 @@
 #include "rinex/NavData/Gps/GpsNavData.hpp"
+#include "navigation/clock.hpp"
 
 GpsNavData::GpsNavData(int year, int month, int day, int hour, int minute, double second) : NavData(year, month, day, hour, minute, second)
 {
-
 }
 
 GpsNavData::~GpsNavData()
 {
-
 }
 
-void GpsNavData::AddClockErrors(double data0, double data1, double data2) 
+void GpsNavData::AddClockErrors(double data0, double data1, double data2)
 {
-	_SV_ClockBias__s = data0;
-	_SV_ClockDrift__sDs = data1;
-	_SV_ClockDriftRate__sDs2 = data2;
+	this->_ClockState = navigation::ClockState{
+		.bias = navigation::Seconds{data0},
+		.drift = data1,
+
+		// RINEX stores the quadratic coefficient af2; ClockState stores the second derivative
+		.driftRate = data2 * 2};
 }
 
 void GpsNavData::AddOrbit_1(double data0, double data1, double data2, double data3)
@@ -35,7 +37,7 @@ void GpsNavData::AddOrbit_2(double data0, double data1, double data2, double dat
 
 void GpsNavData::AddOrbit_3(double data0, double data1, double data2, double data3)
 {
-	_Toe__s = data0;
+	_toe = navigation::Seconds{data0};
 	_Cic__rad = data1;
 	_Omega0__rad = data2;
 	_Cis__rad = data3;
@@ -53,7 +55,7 @@ void GpsNavData::AddOrbit_5(double data0, double data1, double data2, double dat
 {
 	_Idot__radDs = data0;
 	_CodesOnL2 = data1;
-	_GpsWeek = data2;
+	_GpsWeek = std::chrono::weeks{static_cast<std::chrono::weeks::rep>(data2)};
 	_L2P_DataFlag = data3;
 }
 
@@ -64,31 +66,11 @@ void GpsNavData::AddOrbit_6(double data0, double data1, double data2, double dat
 	_TGD__s = data2;
 	_IODC = data3;
 }
-			 
+
 void GpsNavData::AddOrbit_7(double data0, double data1, double data2, double data3)
 {
 	_TransmissiontimeOfMessage = data0;
 	_FitInterval__hrs = data1;
 	_Spare0 = data2;
 	_Spare1 = data3;
-}
-
-double GpsNavData::ToeEpoch() const
-{
-	double t__s = 315964800.00000000; // Sunday, 6. January 1980 00:00:00 (GPS time 0)
-
-	t__s += (time_t)86400 * 7 * this->_GpsWeek + this->_Toe__s; //add GalWeek[s] and Toe[s]
-
-	// Week adjustment
-	double tt = difftime(t__s, this->_Epoch.PosixEpochTime__s());
-	if (tt < -302400.0)
-	{
-		t__s += 604800.0;
-	}
-	if (tt > 302400.0)
-	{
-		t__s -= 604800.0;
-	}
-
-	return t__s;
 }

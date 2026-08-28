@@ -6,54 +6,55 @@ GpsEphemeris::GpsEphemeris(GpsSvHealth svHealth) : Ephemeris<GpsSvHealth>(svHeal
 {
 }
 
-double GpsEphemeris::CalcClockOffset(const GpsNavData& nav, double time)
+void GpsEphemeris::CalcClockOffset(const GpsNavData& nav, navigation::GnssTime signalTime)
 {
-	// apply clock correction - taken from RTKLIB eph2clk
-	double t = time - nav.Epoche().PosixEpochTime__s();
-	double ts = t;
+	const navigation::ClockState reference = nav.ClockState();
+	const navigation::Seconds elapsed = navigation::Seconds{signalTime - nav.Epoche().Time()};
 
-	for (int i = 0; i < 2; i++)
+	navigation::Seconds correctedElapsed = elapsed;
+	for (int i = 0; i < 2; ++i)
 	{
-		t = ts - (nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t);
+		navigation::ClockState clock = reference;
+		clock.propagate(correctedElapsed);
+		correctedElapsed = elapsed - clock.bias;
 	}
 
-	this->_SatelliteClockDrift__1Ds = nav.SV_ClockDrift__sDs();
-	this->_SatelliteClockError__s = nav.SV_ClockBias__s() + nav.SV_ClockDrift__sDs() * t + nav.SV_ClockDriftRate__sDs2() * t * t;
-	return this->_SatelliteClockError__s;
+	this->_ClockState = reference;
+	this->_ClockState.propagate(correctedElapsed);
 }
 
-void GpsEphemeris::CalcEphemeris(const GpsNavData& nav, double time, double obstime)
+void GpsEphemeris::CalcEphemeris(const GpsNavData& navData, navigation::GnssTime signalTime, navigation::GnssTime observationTime)
 {
 	KeplerOrbitData orbitData =
 	{
-		.SqrtA___sqrtm = nav.SqrtA___sqrtm(),
-		.DeltaN__radDs = nav.DeltaN__radDs(),
-		.M0__rad = nav.M0__rad(),
-		.Eccentricity = nav.Eccentricity(),
-		.Omega__rad = nav.Omega__rad(),
-		.Omega0__rad = nav.Omega0__rad(),
-		.Omega_dot__radDs = nav.Omega_dot__radDs(),
-		.Cus__rad = nav.Cus__rad(),
-		.Cuc__rad = nav.Cuc__rad(),
-		.Crs__m = nav.Crs__m(),
-		.Crc__m = nav.Crc__m(),
-		.Cis__rad = nav.Cis__rad(),
-		.Cic__rad = nav.Cic__rad(),
-		.i0__rad = nav.i0__rad(),
-		.Idot__radDs = nav.Idot__radDs(),
-		.ToeEpoch = nav.ToeEpoch(),
-		.Toe__s = nav.Toe__s()
+		.SqrtA___sqrtm = navData.SqrtA___sqrtm(),
+		.DeltaN__radDs = navData.DeltaN__radDs(),
+		.M0__rad = navData.M0__rad(),
+		.Eccentricity = navData.Eccentricity(),
+		.Omega__rad = navData.Omega__rad(),
+		.Omega0__rad = navData.Omega0__rad(),
+		.Omega_dot__radDs = navData.Omega_dot__radDs(),
+		.Cus__rad = navData.Cus__rad(),
+		.Cuc__rad = navData.Cuc__rad(),
+		.Crs__m = navData.Crs__m(),
+		.Crc__m = navData.Crc__m(),
+		.Cis__rad = navData.Cis__rad(),
+		.Cic__rad = navData.Cic__rad(),
+		.i0__rad = navData.i0__rad(),
+		.Idot__radDs = navData.Idot__radDs(),
+		.toeEpoch = navData.ToeEpoch(),
+		.toe = navData.Toe()
 	};
 
 	auto orbit = KeplerOrbit();	
-	auto pos_vel = orbit.CalcEphemeris(orbitData, time, obstime);
+	auto pos_vel = orbit.CalcEphemeris(orbitData, signalTime, observationTime);
 	this->_Position_E = std::get<0>(pos_vel);
 	this->_Velocity_E = std::get<1>(pos_vel);
 
-	this->_RelativisticError__s = orbit.RelativisticError__s();
-	this->_Utc__s = time;
-	this->_Toe__s = nav.ToeEpoch();
-	this->_Obstime__s = obstime;
+	this->_relativisticCorrection = orbit.RelativisticCorrection();
+	this->_signalTime = signalTime;
+	this->_toe = navData.ToeEpoch();
+	this->_observationTime = observationTime;
 }
 
 void GpsEphemeris::CalcVelocity()

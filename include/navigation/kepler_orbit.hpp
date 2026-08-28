@@ -3,6 +3,7 @@
 #include "rinex/NavData/NavData.hpp"
 #include "coordinates/ecef_position.hpp"
 #include "coordinates/ecef_velocity.hpp"
+#include "navigation/time.hpp"
 
 struct KeplerOrbitData
 {
@@ -21,22 +22,18 @@ struct KeplerOrbitData
 	double Cic__rad;
 	double i0__rad;
 	double Idot__radDs;
-	double ToeEpoch;
-	double Toe__s;	
+	navigation::GnssTime toeEpoch;
+	navigation::Seconds toe;
 };
 
 class KeplerOrbit
 {
 private:	
-	double _RelativisticError__s;
+	navigation::Seconds _relativisticCorrection;
 
-	double CalcMeanAnomaly(KeplerOrbitData& orbitData, double time);
+	double CalcMeanAnomaly(KeplerOrbitData& orbitData, navigation::GnssTime signalTime);
 
 public:
-	std::tuple<ECEF_Position, ECEF_Velocity> CalcEphemeris(KeplerOrbitData& orbitData, double time, double obstime);
-	double const& RelativisticError__s() const { return this->_RelativisticError__s; }
-
-	// ctor & dtor
-	KeplerOrbit();
-	~KeplerOrbit();
+	std::tuple<ECEF_Position, ECEF_Velocity> CalcEphemeris(KeplerOrbitData& orbitData, navigation::GnssTime signalTime, navigation::GnssTime observationTime);
+	navigation::Seconds const& RelativisticCorrection() const { return this->_relativisticCorrection; }
 };

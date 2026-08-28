@@ -3,6 +3,7 @@
 #include "core/satellite_id.hpp"
 #include "rinex/NavData/Galileo/GalileoNavData.hpp"
 #include "rinex/NavData/Gps/GpsNavData.hpp"
+#include "navigation/time.hpp"
 
 #include <limits>
 #include <variant>
@@ -17,23 +18,24 @@ struct SatelliteNavigation
     SatelliteId satellite;
     std::vector<NavigationMessage> messages;
 
-    const NavigationMessage *FindMessage(double transmissionTime) const
+    const NavigationMessage *FindMessage(navigation::GnssTime transmissionTime) const
     {
         const NavigationMessage *best = nullptr;
-        double bestAge = std::numeric_limits<double>::infinity();
+        navigation::Seconds bestAge{
+            std::numeric_limits<navigation::Seconds::rep>::infinity()};
 
         for (const auto &message : messages)
         {
-            const double toe = std::visit(
+            const navigation::GnssTime toe = std::visit(
                 [](const auto &nav)
                 {
                     return nav.ToeEpoch();
                 },
                 message);
 
-            const double age = transmissionTime - toe;
+            const navigation::Seconds age{transmissionTime - toe};
 
-            if (age >= 0.0 && age < bestAge)
+            if (age >= navigation::Seconds{0} && age < bestAge)
             {
                 best = &message;
                 bestAge = age;

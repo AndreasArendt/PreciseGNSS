@@ -1,6 +1,9 @@
 #include "rinex/NavData/Galileo/GalileoNavData.hpp"
 
 #include <chrono>
+#include "navigation/time.hpp"
+
+using namespace std::chrono_literals;
 
 GalileoNavData::GalileoNavData(int year, int month, int day, int hour, int minute, double second) : NavData(year, month, day, hour, minute, second)
 {
@@ -12,9 +15,13 @@ GalileoNavData::~GalileoNavData()
 
 void GalileoNavData::AddClockErrors(double data0, double data1, double data2)
 {
-	_SV_ClockBias__s = data0;
-	_SV_ClockDrift__sDs = data1;
-	_SV_ClockDriftRate__sDs2 = data2;
+	this->_ClockState = navigation::ClockState {
+		.bias = navigation::Seconds{data0},
+		.drift = data1,
+
+		// RINEX stores the quadratic coefficient af2; ClockState stores the second derivative
+		.driftRate = data2 * 2
+	};
 }
 
 void GalileoNavData::AddOrbit_1(double data0, double data1, double data2, double data3)
@@ -35,7 +42,7 @@ void GalileoNavData::AddOrbit_2(double data0, double data1, double data2, double
 
 void GalileoNavData::AddOrbit_3(double data0, double data1, double data2, double data3)
 {
-	_Toe__s = Seconds{data0};
+	_toe = navigation::Seconds{data0};
 	_Cic__rad = data1;
 	_Omega0__rad = data2; // OMEGA_0
 	_Cis__rad = data3;
@@ -73,35 +80,9 @@ void GalileoNavData::AddOrbit_7(double data0, [[maybe_unused]] double data1, [[m
 	_Spare3 = 0.0;
 }
 
-double GalileoNavData::getGST() const
+navigation::GalileoTime GalileoNavData::getGST() const
 {
 	constexpr auto gstEpochOffset = std::chrono::weeks{1024};
-	const auto gst = _GalWeek + _Toe__s - gstEpochOffset;
-	return std::chrono::duration_cast<Seconds>(gst).count();
-}
-
-double GalileoNavData::ToeEpoch() const
-{
-	using Seconds = std::chrono::duration<double>;
-	using TimePoint = std::chrono::sys_time<Seconds>;
-
-	constexpr auto gpsEpoch = std::chrono::sys_days{std::chrono::year{1980} / std::chrono::January / 6};
-	constexpr auto week = std::chrono::weeks{1};
-	constexpr auto halfWeek = std::chrono::days{3} + std::chrono::hours{12};
-
-	auto toe = TimePoint{gpsEpoch.time_since_epoch()} + this->_GalWeek + this->_Toe__s;
-
-	const auto epoch = TimePoint{Seconds{this->_Epoch.PosixEpochTime__s()}};
-	const auto difference = toe - epoch;
-
-	if (difference < -halfWeek)
-	{
-		toe += week;
-	}
-	else if (difference > halfWeek)
-	{
-		toe -= week;
-	}
-
-	return toe.time_since_epoch().count();
+	return navigation::GalileoTime{std::chrono::duration_cast<navigation::GalileoClock::duration>(
+		_GalWeek + _toe - gstEpochOffset)};
 }

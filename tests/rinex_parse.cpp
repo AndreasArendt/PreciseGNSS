@@ -3,9 +3,11 @@
 #include <iostream>
 #include <ranges>
 #include <variant>
+#include <chrono>
 
 #include "coordinates/transformation.hpp"
 #include "rinex/RinexParser.hpp"
+#include "navigation/time.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -37,7 +39,7 @@ int main(int argc, char *argv[])
 
     for (const ObservationEpoch &epoch : observations->epochs)
     {
-        const double receptionTime = epoch.time.PosixEpochTime__s();
+        const navigation::GnssTime receptionTime = epoch.time.Time();
 
         for (const SatelliteObservation &observation : epoch.satellites)
         {                        
@@ -57,7 +59,10 @@ int main(int argc, char *argv[])
             }
 
             const double pseudorange = observation.CodeObservations.begin()->second.pseudorange_m;
-            const double transmissionTime = receptionTime - pseudorange / Transformation::SpeedOfLight__mDs;
+
+            const auto signalTravelTime = navigation::Seconds {pseudorange / Transformation::SpeedOfLight__mDs};
+            const auto transmissionTime = navigation::GnssTime{
+                std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
 
             const NavigationMessage *message = navSatellite->FindMessage(transmissionTime);
 
