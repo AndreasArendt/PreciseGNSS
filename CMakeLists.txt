@@ -13,8 +13,7 @@ find_package(GTSAM REQUIRED)
 
 add_library(gnss_rtk STATIC
     src/coordinates/wgs84.cpp
-    src/coordinates/transformation.cpp
-    src/core/satellite_id.cpp
+    src/coordinates/transformation.cpp    
     src/core/epoch.cpp
     src/navigation/galileo_ephemeris.cpp
     src/navigation/gps_ephemeris.cpp

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/sv_system.hpp"
+#include "rinex/detail/string_utils.hpp"
 
 #include <format>
 #include <string>
@@ -12,19 +13,12 @@ private:
     int _SvNumber;
 
 public:
-    SvSystem const& SVSystem() const { return this->_SvSystem; }
-    int const& SvNumber() const { return this->_SvNumber; }
-    int SvIdentifier() const {
-        return (static_cast<int>(static_cast<unsigned char>(this->_SvSystem)) << 8)
-            + (this->_SvNumber & 0xFF);
-    }
-    std::string SvString() const {
-        return std::format("{}{}", static_cast<char>(this->_SvSystem), this->_SvNumber);
-    }
+    SvSystem const &SVSystem() const { return this->_SvSystem; }
+    int const &SvNumber() const { return this->_SvNumber; }
 
-    SatelliteId();
-    SatelliteId(SvSystem svSystem, int svNumber);
-    explicit SatelliteId(std::string satellite);
+    SatelliteId() : _SvSystem(SvSystem::UNKNOWN), _SvNumber(-1)  {}
+    SatelliteId(SvSystem svSystem, int svNumber) : _SvSystem(svSystem), _SvNumber(svNumber) {}
+    explicit SatelliteId(std::string satellite) : _SvSystem(static_cast<SvSystem>(satellite.at(0))), _SvNumber(util::astring::parseInt(satellite.substr(1, 2))) {}
 
-    bool operator==(const SatelliteId& other) const = default;
+    bool operator==(const SatelliteId& other) const = default;    
 };
