@@ -26,14 +26,18 @@ struct KeplerOrbitData
 	navigation::Seconds toe;
 };
 
+struct KeplerState
+{
+	ECEF_Position position;
+	ECEF_Velocity velocity;
+	navigation::Seconds relativisticCorrection;
+};
+
 class KeplerOrbit
 {
-private:	
-	navigation::Seconds _relativisticCorrection;
-
-	double CalcMeanAnomaly(KeplerOrbitData& orbitData, navigation::GnssTime signalTime);
+private:		
+	double CalcMeanAnomaly(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime);
 
 public:
-	std::tuple<ECEF_Position, ECEF_Velocity> CalcEphemeris(KeplerOrbitData& orbitData, navigation::GnssTime signalTime, navigation::GnssTime observationTime);
-	navigation::Seconds const& RelativisticCorrection() const { return this->_relativisticCorrection; }
+	KeplerState Propagate(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime);	
 };

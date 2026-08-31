@@ -15,8 +15,7 @@ add_library(gnss_rtk STATIC
     src/coordinates/wgs84.cpp
     src/coordinates/transformation.cpp    
     src/core/epoch.cpp
-    src/navigation/galileo_ephemeris.cpp
-    src/navigation/gps_ephemeris.cpp
+    src/navigation/ephemeris.cpp    
     src/navigation/kepler_orbit.cpp
     src/rinex/NavData/GalileoNavData.cpp
     src/rinex/NavData/GpsNavData.cpp

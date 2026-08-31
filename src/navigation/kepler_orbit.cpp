@@ -3,9 +3,9 @@
 
 #include <math.h>
 
-double KeplerOrbit::CalcMeanAnomaly(KeplerOrbitData &orbitData, navigation::GnssTime signalTime)
+double KeplerOrbit::CalcMeanAnomaly(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime)
 {
-	navigation::Seconds t_k{signalTime - orbitData.toeEpoch};
+	navigation::Seconds t_k{transmitTime - orbitData.toeEpoch};
 
 	// 1 semi circle = pi rad
 	double A = orbitData.SqrtA___sqrtm * orbitData.SqrtA___sqrtm;
@@ -32,23 +32,25 @@ double KeplerOrbit::CalcMeanAnomaly(KeplerOrbitData &orbitData, navigation::Gnss
 	return E;
 }
 
-std::tuple<ECEF_Position, ECEF_Velocity> KeplerOrbit::CalcEphemeris(KeplerOrbitData &orbitData, navigation::GnssTime signalTime, [[maybe_unused]] navigation::GnssTime observationTime)
+KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime)
 {
+	KeplerState keplerState{};
+
 	// Semi major Axis
 	double A = std::pow(orbitData.SqrtA___sqrtm, 2);
 
 	// Mean Anomaly
-	double E = this->CalcMeanAnomaly(orbitData, signalTime);
+	double E = this->CalcMeanAnomaly(orbitData, transmitTime);
 
 	// Relativistic Error Correction
 	double F = -2 * std::sqrt(Transformation::GravitationalConstant__m3Ds2) / (std::pow(Transformation::SpeedOfLight__mDs,2));
-	this->_relativisticCorrection = navigation::Seconds{F * orbitData.Eccentricity * orbitData.SqrtA___sqrtm * sin(E)};
-	signalTime -= std::chrono::round<navigation::GnssClock::duration>(this->_relativisticCorrection);
+	keplerState.relativisticCorrection = navigation::Seconds{F * orbitData.Eccentricity * orbitData.SqrtA___sqrtm * sin(E)};
+	transmitTime -= std::chrono::round<navigation::GnssClock::duration>(keplerState.relativisticCorrection);
 
 	// Calc Mean Anomaly with corrected time again
-	E = this->CalcMeanAnomaly(orbitData, signalTime);
+	E = this->CalcMeanAnomaly(orbitData, transmitTime);
 
-	navigation::Seconds t_k{signalTime - orbitData.toeEpoch};
+	navigation::Seconds t_k{transmitTime - orbitData.toeEpoch};
 
 	// true anomaly
 	double sqrt_1_e2 = std::sqrt(1 - orbitData.Eccentricity * orbitData.Eccentricity);
@@ -136,5 +138,8 @@ std::tuple<ECEF_Position, ECEF_Velocity> KeplerOrbit::CalcEphemeris(KeplerOrbitD
 
 	double zdot = y_prime_dot * sin(i) + y_prime * dldot_kDdt * cos(i);
 
-	return std::tuple<ECEF_Position, ECEF_Velocity>(ECEF_Position(x, y, z), ECEF_Velocity(xdot, ydot, zdot));
+	keplerState.position = ECEF_Position(x, y, z);
+	keplerState.velocity = ECEF_Velocity(xdot, ydot, zdot);
+
+	return keplerState;
 }

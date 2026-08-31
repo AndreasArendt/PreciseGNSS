@@ -4,33 +4,33 @@
 #include "coordinates/ecef_velocity.hpp"
 #include "navigation/time.hpp"
 #include "navigation/clock.hpp"
+#include "navigation/kepler_orbit.hpp"
 
-template <typename SvHealth>
+struct SatelliteState
+{
+	ECEF_Position Position_E;
+	ECEF_Velocity Velocity_E;
+	navigation::ClockState ClockState;
+	navigation::Seconds relativisticCorrection;
+	navigation::GnssTime signalTime;
+	navigation::GnssTime toe;
+	navigation::GnssTime observationTime;
+};
+
+template<typename NavigationData, typename OrbitModel, typename ClockModel>
 class Ephemeris
 {
-protected:
-	// remember to add variables to == Operator overload
-	ECEF_Position _Position_E;
-	ECEF_Velocity _Velocity_E;
-	SvHealth _SvHealth;
-	navigation::ClockState _ClockState;
-	navigation::Seconds _relativisticCorrection;
-	navigation::GnssTime _signalTime;
-	navigation::GnssTime _toe;
-	navigation::GnssTime _observationTime;
+private: 
+	SatelliteState _SatelliteState{};
 
 public:
 	// getters
-	ECEF_Position const &Position_E() const { return this->_Position_E; }
-	ECEF_Velocity const &Velocity_E() const { return this->_Velocity_E; }
-	navigation::ClockState ClockState() const { return this->_ClockState; }
-	navigation::Seconds RelativisticCorrection() const { return this->_relativisticCorrection; }
-	navigation::GnssTime SignalTime() const { return this->_signalTime; }
-	navigation::GnssTime Toe() const { return this->_toe; }
-	navigation::GnssTime ObservationTime() const { return this->_observationTime; }
-	SvHealth const &SatelliteHealth() const { return this->_SvHealth; }
+	SatelliteState const &State() const { return this->_SatelliteState; }	
+
+	// functions
+	SatelliteState Calculate(const NavigationData& nav, navigation::GnssTime transmitTime) const;
 
 	// ctor & dtor
-	Ephemeris(SvHealth svHealth) : _Position_E{}, _Velocity_E{}, _SvHealth(svHealth), _ClockState{} {};
+	Ephemeris() : _SatelliteState{} {};
 	virtual ~Ephemeris() = default;
 };

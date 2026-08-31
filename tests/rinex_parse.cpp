@@ -8,6 +8,7 @@
 #include "coordinates/transformation.hpp"
 #include "rinex/RinexParser.hpp"
 #include "navigation/time.hpp"
+#include "navigation/ephemeris.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -71,6 +72,18 @@ int main(int argc, char *argv[])
                 ++missingMessages;
                 continue;
             }
+
+            using GpsCalculator = Ephemeris<GpsNavData, KeplerOrbit, navigation::ClockState>;
+            const GpsCalculator gpsCalculator{};
+            const auto *gpsMessage = std::get_if<GpsNavData>(message);
+            if (!gpsMessage)
+            {
+                ++missingMessages;
+                continue;
+            }
+
+            const SatelliteState satelliteState = gpsCalculator.Calculate(*gpsMessage, transmissionTime);
+            (void)satelliteState;
 
             ++matchedObservations;
         }

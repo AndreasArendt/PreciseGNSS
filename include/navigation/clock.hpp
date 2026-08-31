@@ -20,7 +20,7 @@ namespace navigation
         ClockDrift drift{};
         ClockDriftRate driftRate{};
 
-        void propagate(Seconds dt)
+        void Propagate(Seconds dt)
         {
             const double t = dt.count();
 
