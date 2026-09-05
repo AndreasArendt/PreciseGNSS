@@ -5,7 +5,8 @@
 #include "rinex/NavData/Gps/GpsNavData.hpp"
 #include "navigation/time.hpp"
 
-#include <limits>
+#include <chrono>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -20,22 +21,30 @@ struct SatelliteNavigation
 
     const NavigationMessage *FindMessage(navigation::GnssTime transmissionTime) const
     {
+        constexpr std::chrono::hours maximumAge{4};
+
         const NavigationMessage *best = nullptr;
-        navigation::Seconds bestAge{
-            std::numeric_limits<navigation::Seconds::rep>::infinity()};
+        navigation::Seconds bestAge = maximumAge;
 
         for (const auto &message : messages)
         {
-            const navigation::GnssTime toe = std::visit(
+            const auto [toe, messageTime] = std::visit(
                 [](const auto &nav)
                 {
-                    return nav.ToeEpoch();
+                    return std::pair{
+                        nav.ToeEpoch(),
+                        nav.Epoche().Time()};
                 },
                 message);
 
-            const navigation::Seconds age{transmissionTime - toe};
+            // Do not use a navigation record that had not been broadcast yet.
+            if (messageTime > transmissionTime)
+                continue;
 
-            if (age >= navigation::Seconds{0} && age < bestAge)
+            const navigation::Seconds age = std::chrono::abs(
+                navigation::Seconds{transmissionTime - toe});
+
+            if (age <= maximumAge && (!best || age < bestAge))
             {
                 best = &message;
                 bestAge = age;

@@ -1,14 +1,5 @@
-#include "coordinates/transformation.hpp"
 #include "rinex/RinexParser.hpp"
-#include "navigation/time.hpp"
-#include "navigation/ephemeris_traits.hpp"
-
-#include <cstdlib>
-#include <filesystem>
-#include <iostream>
-#include <ranges>
-#include <variant>
-#include <chrono>
+#include "positioning/providers/broadcast_epoch_provider.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -34,62 +25,11 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    std::size_t matchedObservations = 0;
-    std::size_t missingSatellites = 0;
-    std::size_t missingMessages = 0;
-
+    BroadcastEpochProvider provider{*navigation};
     for (const ObservationEpoch &epoch : observations->epochs)
-    {
-        const navigation::GnssTime receptionTime = epoch.time.Time();
-
-        for (const SatelliteObservation &observation : epoch.satellites)
-        {
-            // find obs satellite in nav
-            const auto navSatellite = std::ranges::find(navigation->satellites, observation.satellite, &SatelliteNavigation::satellite);
-
-            // did not find any
-            if (navSatellite == navigation->satellites.end())
-            {
-                ++missingSatellites;
-                continue;
-            }
-
-            if (observation.CodeObservations.empty())
-            {
-                continue;
-            }
-
-            const double pseudorange = observation.CodeObservations.begin()->second.pseudorange_m;
-
-            const auto signalTravelTime = navigation::Seconds{pseudorange / Transformation::SpeedOfLight__mDs};
-            const auto transmissionTime = navigation::GnssTime{
-                std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
-
-            const NavigationMessage *message = navSatellite->FindMessage(transmissionTime);
-
-            if (!message)
-            {
-                ++missingMessages;
-                continue;
-            }
-
-            const SatelliteState state = std::visit(
-                [&](const auto &nav)
-                {
-                    return navigation::CalculateEphemeris(nav, transmissionTime);
-                },
-                *message);
-            (void)state;
-
-            ++matchedObservations;
-        }
+    {        
+        auto epoch_measurements = provider.GetEpoch(epoch);
     }
-
-    std::cout << "Observation epochs: " << observations->epochs.size() << '\n'
-              << "Navigation satellites: " << navigation->satellites.size() << '\n'
-              << "Matched observations: " << matchedObservations << '\n'
-              << "Missing satellites: " << missingSatellites << '\n'
-              << "Missing navigation messages: " << missingMessages << '\n';
 
     return EXIT_SUCCESS;
 }

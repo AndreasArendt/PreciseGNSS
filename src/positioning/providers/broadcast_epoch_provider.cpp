@@ -1,0 +1,55 @@
+#include "positioning/providers/broadcast_epoch_provider.hpp"
+#include "coordinates/transformation.hpp"
+#include "navigation/ephemeris_traits.hpp"
+
+#include <chrono>
+#include <ranges>
+#include <variant>
+
+PositioningEpoch BroadcastEpochProvider::GetEpoch(const ObservationEpoch &epoch) const
+{
+    PositioningEpoch result{
+        .receptionTime = epoch.time.Time(),
+        .measurements = {},
+    };
+
+    const navigation::GnssTime receptionTime = epoch.time.Time();
+
+    for (const SatelliteObservation &obs : epoch.satellites)
+    {
+        // find obs satellite in nav
+        const auto navSatellite = std::ranges::find(this->_navigation.satellites, obs.satellite, &SatelliteNavigation::satellite);
+
+        // did not find any
+        if (navSatellite == this->_navigation.satellites.end())
+            continue;
+
+        if (obs.CodeObservations.empty())
+            continue;
+
+        const double pseudorange = obs.CodeObservations.begin()->second.pseudorange_m;
+
+        const auto signalTravelTime = navigation::Seconds{pseudorange / Transformation::SpeedOfLight__mDs};
+        const auto transmissionTime = navigation::GnssTime{
+            std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
+
+        const NavigationMessage *message = navSatellite->FindMessage(transmissionTime);
+
+        if (!message)
+            continue;
+
+        const SatelliteState state = std::visit(
+            [&](const auto &nav)
+            {
+                return navigation::CalculateEphemeris(nav, transmissionTime);
+            },
+            *message);
+
+        result.measurements.push_back(SatelliteMeasurement{
+            .observations = obs,
+            .satelliteState = state,
+            .approximateTravelTime = signalTravelTime});
+    }
+
+    return result;
+}
