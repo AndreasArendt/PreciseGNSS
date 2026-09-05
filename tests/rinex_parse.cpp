@@ -1,14 +1,14 @@
+#include "coordinates/transformation.hpp"
+#include "rinex/RinexParser.hpp"
+#include "navigation/time.hpp"
+#include "navigation/ephemeris_traits.hpp"
+
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <ranges>
 #include <variant>
 #include <chrono>
-
-#include "coordinates/transformation.hpp"
-#include "rinex/RinexParser.hpp"
-#include "navigation/time.hpp"
-#include "navigation/ephemeris.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -43,12 +43,12 @@ int main(int argc, char *argv[])
         const navigation::GnssTime receptionTime = epoch.time.Time();
 
         for (const SatelliteObservation &observation : epoch.satellites)
-        {                        
+        {
             // find obs satellite in nav
             const auto navSatellite = std::ranges::find(navigation->satellites, observation.satellite, &SatelliteNavigation::satellite);
-                   
+
             // did not find any
-            if(navSatellite == navigation->satellites.end())                
+            if (navSatellite == navigation->satellites.end())
             {
                 ++missingSatellites;
                 continue;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 
             const double pseudorange = observation.CodeObservations.begin()->second.pseudorange_m;
 
-            const auto signalTravelTime = navigation::Seconds {pseudorange / Transformation::SpeedOfLight__mDs};
+            const auto signalTravelTime = navigation::Seconds{pseudorange / Transformation::SpeedOfLight__mDs};
             const auto transmissionTime = navigation::GnssTime{
                 std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
 
@@ -73,17 +73,13 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            using GpsCalculator = Ephemeris<GpsNavData, KeplerOrbit, navigation::ClockState>;
-            const GpsCalculator gpsCalculator{};
-            const auto *gpsMessage = std::get_if<GpsNavData>(message);
-            if (!gpsMessage)
-            {
-                ++missingMessages;
-                continue;
-            }
-
-            const SatelliteState satelliteState = gpsCalculator.Calculate(*gpsMessage, transmissionTime);
-            (void)satelliteState;
+            const SatelliteState state = std::visit(
+                [&](const auto &nav)
+                {
+                    return navigation::CalculateEphemeris(nav, transmissionTime);
+                },
+                *message);
+            (void)state;
 
             ++matchedObservations;
         }

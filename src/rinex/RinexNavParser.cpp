@@ -161,11 +161,12 @@ void RinexNavParser::ParseEpoch(std::string line)
 	case NavEPochParsingState_SKIP:
 	{
 		// stay in SKIP state until line start is non-empty
-		if (line.at(0) == ' ')
-		{
-			break;
+			if (line.at(0) == ' ')
+			{
+				break;
+			}
+			[[fallthrough]];
 		}
-	}
 	case NavEpochParsingState_IDLE:
 	case NavEpochParsingState_CLOCK_ERROR:
 	{

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rinex/NavData/NavData.hpp"
 #include "coordinates/ecef_position.hpp"
 #include "coordinates/ecef_velocity.hpp"
 #include "navigation/time.hpp"
@@ -36,8 +35,10 @@ struct KeplerState
 class KeplerOrbit
 {
 private:		
-	double CalcMeanAnomaly(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime);
+	double CalcMeanAnomaly(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime) const;
 
 public:
-	KeplerState Propagate(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime);	
+	using Data = KeplerOrbitData;
+
+	KeplerState Propagate(const KeplerOrbitData& orbitData, navigation::GnssTime signalTime) const;
 };

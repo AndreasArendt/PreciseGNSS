@@ -18,17 +18,33 @@ namespace navigation
     {
         Seconds bias{};
         ClockDrift drift{};
+    };
+
+    struct PolynomialClockData
+    {
+        Seconds bias{};
+        ClockDrift drift{};
         ClockDriftRate driftRate{};
+        GnssTime referenceTime{};
+    };
 
-        void Propagate(Seconds dt)
+    class PolynomialClock
+    {
+    public:
+        using Data = PolynomialClockData;
+
+        ClockState Propagate(const Data &clock, GnssTime signalTime) const
         {
-            const double t = dt.count();
+            const navigation::Seconds dt{signalTime - clock.referenceTime};
+            const double seconds = dt.count();
 
-            bias += Seconds{
-                drift.secondsPerSecond * t +
-                0.5 * driftRate.secondsPerSecondSquared * t * t};
-
-            drift.secondsPerSecond += driftRate.secondsPerSecondSquared * t;
+            return ClockState{
+                .bias = clock.bias + navigation::Seconds{
+                                         clock.drift.secondsPerSecond * seconds +
+                                         clock.driftRate.secondsPerSecondSquared *
+                                             seconds * seconds},
+                .drift = navigation::ClockDrift{clock.drift.secondsPerSecond + 2.0 * clock.driftRate.secondsPerSecondSquared * seconds},
+            };
         }
     };
 }

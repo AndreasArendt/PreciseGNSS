@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-double KeplerOrbit::CalcMeanAnomaly(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime)
+double KeplerOrbit::CalcMeanAnomaly(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime) const
 {
 	navigation::Seconds t_k{transmitTime - orbitData.toeEpoch};
 
@@ -32,7 +32,7 @@ double KeplerOrbit::CalcMeanAnomaly(const KeplerOrbitData &orbitData, navigation
 	return E;
 }
 
-KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime)
+KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation::GnssTime transmitTime) const
 {
 	KeplerState keplerState{};
 
@@ -45,11 +45,7 @@ KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation:
 	// Relativistic Error Correction
 	double F = -2 * std::sqrt(Transformation::GravitationalConstant__m3Ds2) / (std::pow(Transformation::SpeedOfLight__mDs,2));
 	keplerState.relativisticCorrection = navigation::Seconds{F * orbitData.Eccentricity * orbitData.SqrtA___sqrtm * sin(E)};
-	transmitTime -= std::chrono::round<navigation::GnssClock::duration>(keplerState.relativisticCorrection);
-
-	// Calc Mean Anomaly with corrected time again
-	E = this->CalcMeanAnomaly(orbitData, transmitTime);
-
+	
 	navigation::Seconds t_k{transmitTime - orbitData.toeEpoch};
 
 	// true anomaly
