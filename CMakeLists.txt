@@ -23,6 +23,7 @@ add_library(gnss_rtk STATIC
     src/rinex/RinexObsParser.cpp
     src/rinex/RinexParser.cpp
     src/positioning/providers/broadcast_epoch_provider.cpp
+    src/positioning/measurements/pseudorange_model.cpp
 )
 
 target_include_directories(gnss_rtk

@@ -11,7 +11,8 @@ struct SatelliteState
 	ECEF_Position Position_E;
 	ECEF_Velocity Velocity_E;
 	navigation::ClockState clock;
-	navigation::GnssTime signalTime;	
+	navigation::GnssTime signalTime;
+	navigation::Seconds relativisticClockBias;
 };
 
 template <typename OrbitModel, typename ClockModel>
@@ -61,5 +62,6 @@ SatelliteState Ephemeris<OrbitModel, ClockModel>::Calculate(
 	state.Position_E = orbitState.position;
 	state.Velocity_E = orbitState.velocity;
 	state.signalTime = signalTime;
+	state.relativisticClockBias = orbitState.relativisticCorrection;
 	return state;
 }

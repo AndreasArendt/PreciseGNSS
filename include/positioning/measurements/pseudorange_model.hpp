@@ -1,12 +1,19 @@
 #pragma once
 
+#include <array>
+
+#include "navigation/ephemeris.hpp"
+#include "positioning/correction_context.hpp"
+#include "positioning/measurements/code_observation.hpp"
+#include "positioning/receiver_state.hpp"
+
 struct PseudorangePrediction
 {
     double predicted_m{};
-    double residual_m{};
-    double variance_m2{};
-    Vector3 positionJacobian;
-    CorrectionBreakdown corrections;
+    // Derivative of predicted_m with respect to receiver ECEF x, y, z.
+    std::array<double, 3> d_predicted_d_receiver_position{};
+    double d_predicted_d_receiver_clock_bias{};
+    CorrectionBreakdown corrections{};
 };
 
 class PseudorangeModel
