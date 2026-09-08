@@ -30,7 +30,7 @@ RUN apt-get update \
 # Ubuntu 24.04's GTSAM CMake export references this test-only archive, but
 # libgtsam-dev does not ship it. An empty archive satisfies the export check;
 # application targets link against libgtsam, not CppUnitLite.
-RUN ar rcs /usr/lib/x86_64-linux-gnu/libCppUnitLite.a
+RUN ar rcs "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/libCppUnitLite.a"
 
 USER vscode
 
