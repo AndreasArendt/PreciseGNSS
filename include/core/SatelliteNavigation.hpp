@@ -41,8 +41,7 @@ struct SatelliteNavigation
             if (messageTime > transmissionTime)
                 continue;
 
-            const navigation::Seconds age = std::chrono::abs(
-                navigation::Seconds{transmissionTime - toe});
+            const navigation::Seconds age = std::chrono::abs(navigation::Seconds{transmissionTime - toe});
 
             if (age <= maximumAge && (!best || age < bestAge))
             {
