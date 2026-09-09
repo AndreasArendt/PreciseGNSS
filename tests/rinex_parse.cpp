@@ -4,8 +4,9 @@
 
 int main(int argc, char *argv[])
 {
-    const std::filesystem::path observationPath = "/workspaces/PreciseGnss/data/AUBG00DEU_R_20262390000_01D_30S_MO.obs";
-    const std::filesystem::path navigationPath = "/workspaces/PreciseGnss/data/AUBG00DEU_R_20262390000_01D_MN.nav";
+    const std::filesystem::path dataPath = RINEX_DATA_DIR;
+    const std::filesystem::path observationPath = dataPath / "AUBG00DEU_R_20262390000_01D_30S_MO.obs";
+    const std::filesystem::path navigationPath = dataPath / "AUBG00DEU_R_20262390000_01D_MN.nav";
 
     RinexParser parser;
     const RinexFile obsResult = parser.Parse(observationPath);

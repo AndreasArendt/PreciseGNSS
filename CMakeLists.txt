@@ -69,5 +69,9 @@ if(GNSS_RTK_BUILD_TESTS)
         target_link_libraries("${test_target}" PRIVATE gnss_rtk)
     endforeach()
 
+    target_compile_definitions(rinex_parse PRIVATE
+        RINEX_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+    )
+
     add_test(NAME wgs84_roundtrip COMMAND wgs84_test)
 endif()
