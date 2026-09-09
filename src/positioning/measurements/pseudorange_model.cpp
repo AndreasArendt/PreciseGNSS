@@ -39,7 +39,9 @@ PseudorangePrediction PseudorangeModel::Evaluate(
       Transformation::SpeedOfLight__mDs * sv_clock_bias.count();
 
   double predicted__m = geometric_distance__m +
-                        (receiver.clockBias_m - sv_clock_error__m) + sagnac__m;
+                        (receiver.clockBias_m - sv_clock_error__m) + sagnac__m +
+                        context.troposphere_m + context.ionosphere_m +
+                        context.groupDelay_m;
 
   return PseudorangePrediction{
       .predicted_m = predicted__m,
@@ -55,7 +57,7 @@ PseudorangePrediction PseudorangeModel::Evaluate(
       .d_predicted_d_receiver_clock_bias = 1.0,
       .corrections{.satelliteClock_m{-sv_clock_error__m},
                    .earthRotation_m{sagnac__m},
-                   .troposphere_m{0},
-                   .ionosphere_m{0},
-                   .groupDelay_m{0}}};
+                   .troposphere_m{context.troposphere_m},
+                   .ionosphere_m{context.ionosphere_m},
+                   .groupDelay_m{context.groupDelay_m}}};
 }

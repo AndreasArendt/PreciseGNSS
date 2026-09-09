@@ -1,5 +1,6 @@
 #include "rinex/RinexParser.hpp"
 #include "positioning/providers/broadcast_epoch_provider.hpp"
+#include "positioning/estimators/spp_solver.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -26,10 +27,15 @@ int main(int argc, char *argv[])
     }
 
     BroadcastEpochProvider provider{*navigation};
+    std::vector<PositioningEpoch> posEpochs;
     for (const ObservationEpoch &epoch : observations->epochs)
     {        
-        auto epoch_measurements = provider.GetEpoch(epoch);
+        PositioningEpoch pEpoch = provider.GetEpoch(epoch);
+        posEpochs.emplace_back(pEpoch);
     }
+
+    SPPSolver solver{};
+    std::vector<SPPState> sppstate = solver.Solve(posEpochs);
 
     return EXIT_SUCCESS;
 }
