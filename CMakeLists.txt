@@ -27,6 +27,7 @@ add_library(gnss_rtk STATIC
     src/positioning/measurements/pseudorange_model.cpp
     src/positioning/measurements/code_variance_model.cpp
     src/positioning/estimators/spp_solver.cpp
+    src/positioning/linearization/pseudorange_linearizer.cpp
 )
 
 target_include_directories(gnss_rtk
