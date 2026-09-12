@@ -37,13 +37,18 @@ int main(int argc, char *argv[]) {
   }
 
   SPPSolver solver{};
-  std::vector<SPPState> sppstate = solver.Solve(posEpochs);
+  std::vector<EpochSolveResult> sppResult = solver.Solve(posEpochs);
 
   int i = 0;
-  for (const auto &spp : sppstate) {
-    double delta = (spp.receiverState->position - observations->approximateMarkerPosition).norm();
-
-    std::cout << delta << std::endl;
+  for (const auto &spp : sppResult) {
+    if (const auto &receiverState = spp.receiverState) {
+      double delta = (spp.receiverState->position -
+                      observations->approximateMarkerPosition)
+                         .norm();
+      std::cout << delta << " iter: " << spp.diagnostics.iterations << std::endl;
+    } else {
+      std::cout << "Failed epoch" << static_cast<int>(spp.status) << std::endl;
+    }
     ++i;
   }
 

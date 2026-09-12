@@ -6,21 +6,38 @@
 #include "positioning/positioning_epoch.hpp"
 #include "positioning/receiver_state.hpp"
 
-struct SPPState {
-  std::optional<ReceiverState> receiverState;
-  navigation::GnssTime epochtime;
-};
-
 struct SolverConfig {
-  unsigned int maxIterations = 100;
+  int maxIterations = 100;
   double position_tolerance_m = 1e-3;
   double clock_tolerance_m = 1e-3;
+};
+
+enum class SolveStatus {
+  Converged,
+  InsufficientMeasurements,
+  RankDeficient,
+  InvalidLinearization,
+  NonFiniteUpdate,
+  MaxIterations
+};
+
+struct SolverDiagnostics {
+  int iterations = 0;
+  std::optional<double> residualRms_m;
+};
+
+struct EpochSolveResult {
+  std::optional<ReceiverState> receiverState{};
+  SolveStatus status{};
+  SolverDiagnostics diagnostics{};
+  navigation::GnssTime receptionTime{};
 };
 
 class SPPSolver {
 
 private:
 public:
-  std::vector<SPPState> Solve(const std::vector<PositioningEpoch> &epochs,
-                              const SolverConfig &solverConfig = {});
+  std::vector<EpochSolveResult>
+  Solve(const std::vector<PositioningEpoch> &epochs,
+        const SolverConfig &solverConfig = {});
 };
