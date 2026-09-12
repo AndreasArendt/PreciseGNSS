@@ -12,6 +12,13 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
                             const std::optional<ReceiverState> &initial,
                             const SolverConfig &solverConfig) {
 
+  EpochSolveResult result{
+      .receiverState = std::nullopt,
+      .status = SolveStatus::MaxIterations,
+      .diagnostics = {},
+      .receptionTime = epoch.receptionTime,
+  };
+
   // get initial guess
   ReceiverState receiver{};
   if (initial) {
@@ -20,24 +27,19 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
 
   const CorrectionContext context{};
 
-  for (int iteration = 1; iteration <= solverConfig.maxIterations;
-       ++iteration) {
+  for (int iteration = 0; iteration < solverConfig.maxIterations; ++iteration) {
+    result.diagnostics.iterations = iteration + 1;
+
     const auto linearizedSystem =
         LinearizePseudorangeEpoch(epoch, receiver, context);
 
     if (!linearizedSystem) {
-      return EpochSolveResult{
-          .receiverState = std::nullopt,
-          .status = SolveStatus::InvalidLinearization,
-          .diagnostics = SolverDiagnostics{.iterations = iteration,
-                                           .residualRms_m = std::nullopt}};
+      result.status = SolveStatus::InvalidLinearization;
+      return result;
     }
     if (linearizedSystem->jacobian.rows() < linearizedSystem->jacobian.cols()) {
-      return EpochSolveResult{
-          .receiverState = std::nullopt,
-          .status = SolveStatus::InsufficientMeasurements,
-          .diagnostics = SolverDiagnostics{.iterations = iteration,
-                                           .residualRms_m = std::nullopt}};
+      result.status = SolveStatus::InsufficientMeasurements;
+      return result;
     }
 
     Eigen::MatrixXd weightedH = linearizedSystem->jacobian;
@@ -47,19 +49,13 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
 
     auto qr = weightedH.colPivHouseholderQr();
     if (qr.rank() < weightedH.cols()) {
-      return EpochSolveResult{
-          .receiverState = std::nullopt,
-          .status = SolveStatus::RankDeficient,
-          .diagnostics = SolverDiagnostics{.iterations = iteration,
-                                           .residualRms_m = std::nullopt}};
+      result.status = SolveStatus::RankDeficient;
+      return result;
     }
     Eigen::Vector4d dx = qr.solve(weightedResiduals);
     if (!dx.allFinite()) {
-      return EpochSolveResult{
-          .receiverState = std::nullopt,
-          .status = SolveStatus::NonFiniteUpdate,
-          .diagnostics = SolverDiagnostics{.iterations = iteration,
-                                           .residualRms_m = std::nullopt}};
+      result.status = SolveStatus::NonFiniteUpdate;
+      return result;
     }
 
     receiver.position = ECEF_Position{receiver.position.x() + dx(0),
@@ -77,23 +73,15 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
       const Eigen::Vector4d variances =
           qr.colsPermutation() * inverseR.rowwise().squaredNorm();
 
-      return EpochSolveResult{
-          .receiverState =
-              ReceiverState{.position = receiver.position,
-                            .clockBias_m = receiver.clockBias_m,
-                            .pos_variance__m2 = variances.head<3>(),
-                            .clockBias_variance__m2 = variances(3)},
-          .status = SolveStatus::Converged,
-          .diagnostics = SolverDiagnostics{.iterations = iteration,
-                                           .residualRms_m = std::nullopt}};
+      receiver.pos_variance__m2 = variances.head<3>();
+      receiver.clockBias_variance__m2 = variances(3);
+      result.receiverState = receiver;
+      result.status = SolveStatus::Converged;
+      return result;
     }
   }
 
-  return EpochSolveResult{
-      .receiverState = std::nullopt,
-      .status = SolveStatus::MaxIterations,
-      .diagnostics = SolverDiagnostics{.iterations = solverConfig.maxIterations,
-                                       .residualRms_m = std::nullopt}};
+  return result;
 }
 
 } // namespace
@@ -110,7 +98,6 @@ SPPSolver::Solve(const std::vector<PositioningEpoch> &epochs,
 
     // passing initial/previous receiverState
     EpochSolveResult result = SolveEpoch(epoch, receiverState, solverConfig);
-    result.receptionTime = epoch.receptionTime;
     receiverState = result.receiverState;
 
     results.push_back(result);
