@@ -1,6 +1,7 @@
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <cmath>
 #include <stdexcept>
-#include <vector>
 
 #include "core/constants.hpp"
 #include "positioning/measurements/pseudorange_model.hpp"
@@ -12,25 +13,17 @@ PseudorangePrediction PseudorangeModel::Evaluate(
     const SatelliteState &satellite, const CorrectionContext &context) const {
 
   Position delta_pos = satellite.Position_E - receiver.position;
-  double geometric_distance__m =
-      std::hypot(delta_pos.x(), delta_pos.y(), delta_pos.z());
+  double geometric_distance__m = delta_pos.norm();
 
   if (!std::isfinite(geometric_distance__m) || geometric_distance__m <= 0.0)
     throw std::invalid_argument(
         "Distance between receiver and satellite is 0 or nonfinite");
 
-  // todo use proper cross product function later! ([0;0;w] x [x;y;z]^s)
-  std::vector<double> cross_w_x_xsv{
-      -constants::MeanAngularVelocityOfEarth__radDs *
-          satellite.Position_E.y(),
-      constants::MeanAngularVelocityOfEarth__radDs *
-          satellite.Position_E.x(),
-      0};
+  const Eigen::Vector3d w(0, 0, constants::MeanAngularVelocityOfEarth__radDs);
+  const Eigen::Vector3d cross_w_x_xsv = w.cross(satellite.Position_E.vector());
 
   double sagnac__m =
-      -(delta_pos.x() * cross_w_x_xsv[0] + delta_pos.y() * cross_w_x_xsv[1] +
-        delta_pos.z() * cross_w_x_xsv[2]) /
-      constants::SpeedOfLight__mDs;
+      -cross_w_x_xsv.dot(delta_pos.vector()) / constants::SpeedOfLight__mDs;
 
   navigation::Seconds sv_clock_bias =
       satellite.clock.bias + satellite.relativisticClockBias;
@@ -47,10 +40,10 @@ PseudorangePrediction PseudorangeModel::Evaluate(
       .predicted_m = predicted__m,
       .d_predicted_d_receiver_position{
           -delta_pos.x() / geometric_distance__m +
-              cross_w_x_xsv[0] / constants::SpeedOfLight__mDs,
+              cross_w_x_xsv.x() / constants::SpeedOfLight__mDs,
 
           -delta_pos.y() / geometric_distance__m +
-              cross_w_x_xsv[1] / constants::SpeedOfLight__mDs,
+              cross_w_x_xsv.y() / constants::SpeedOfLight__mDs,
 
           -delta_pos.z() / geometric_distance__m,
       },
