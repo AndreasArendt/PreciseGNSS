@@ -43,10 +43,6 @@ int main(int argc, char *argv[]) {
   for (const auto &spp : sppstate) {
     double delta = (spp.receiverState->position - observations->approximateMarkerPosition).norm();
 
-    if (delta > 60)
-    {
-        asm volatile ("nop");
-    }
     std::cout << delta << std::endl;
     ++i;
   }
