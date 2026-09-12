@@ -12,6 +12,7 @@ option(GNSS_RTK_BUILD_TESTS "Build test targets" ON)
 find_package(GTSAM REQUIRED)
 
 add_library(gnss_rtk STATIC
+    src/estimation/robust_weighting.cpp
     src/coordinates/wgs84.cpp
     src/coordinates/transformation.cpp    
     src/core/epoch.cpp    

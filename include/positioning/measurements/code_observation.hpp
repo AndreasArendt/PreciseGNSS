@@ -11,6 +11,4 @@ struct CodeObservation
     ObservationBand band{ObservationBand::Band_Unkown};
     ObservationAttribute attribute{ObservationAttribute::Channel_Unknown};
     double pseudorange_m{};
-    // Measurement variance; supply a positive value before estimator weighting.
-    double variance_m2{};
 };

@@ -2,50 +2,51 @@
 #include <cmath>
 #include <optional>
 
+#include "estimation/robust_weighting.hpp"
 #include "positioning/estimators/spp_solver.hpp"
 #include "positioning/measurements/pseudorange_model.hpp"
 
 namespace {
 
+struct LinearizedSystem {
+  Eigen::MatrixXd jacobian;
+  Eigen::VectorXd residuals;
+  Eigen::VectorXd variances_m2;
+};
+
 bool LinearizeEpoch(const PositioningEpoch &epoch,
                     const ReceiverState &receiver,
-                    const CorrectionContext &context, Eigen::MatrixXd &H,
-                    Eigen::VectorXd &residuals) {
+                    const CorrectionContext &context,
+                    LinearizedSystem &linearizedSystem) {
   Eigen::Index row = 0;
+
   for (const auto &measurement : epoch.measurements) {
     for (const auto &codeObs : measurement.observations.CodeObservations) {
       const CodeObservation observation{
           .satellite = measurement.observations.satellite,
           .band = codeObs.first,
           .attribute = ObservationAttribute::Channel_Unknown,
-          .pseudorange_m = codeObs.second.pseudorange_m,
-          .variance_m2 = 0.0};
+          .pseudorange_m = codeObs.second.pseudorange_m};
       PseudorangeModel model;
       const auto prediction = model.Evaluate(
           observation, receiver, measurement.satelliteState, context);
 
-      residuals(row) = observation.pseudorange_m - prediction.predicted_m;
+      linearizedSystem.residuals(row) =
+          observation.pseudorange_m - prediction.predicted_m;
+
+      linearizedSystem.variances_m2(row) = 5.0 * 5.0;
+
       for (Eigen::Index column = 0; column < 3; ++column) {
-        H(row, column) = prediction.d_predicted_d_receiver_position[column];
+        linearizedSystem.jacobian(row, column) =
+            prediction.d_predicted_d_receiver_position[column];
       }
-      H(row, 3) = prediction.d_predicted_d_receiver_clock_bias;
+      linearizedSystem.jacobian(row, 3) =
+          prediction.d_predicted_d_receiver_clock_bias;
       ++row;
     }
   }
-  return H.allFinite() && residuals.allFinite();
-}
-
-void ApplyHuberWeights(Eigen::MatrixXd &H, Eigen::VectorXd &residuals) {
-  constexpr double huber_k = 1.345; // Huber default
-  constexpr double sigma_m = 5.0;   // TODO: Model measurement uncertainty.
-
-  for (Eigen::Index row = 0; row < residuals.size(); ++row) {
-    const double absU = std::abs(residuals(row)) / sigma_m;
-    const double weight = absU <= huber_k ? 1.0 : huber_k / absU;
-    const double scale = std::sqrt(weight) / sigma_m;
-    H.row(row) *= scale;
-    residuals(row) *= scale;
-  }
+  return linearizedSystem.jacobian.allFinite() &&
+         linearizedSystem.residuals.allFinite();
 }
 
 std::optional<ReceiverState> SolveEpoch(const PositioningEpoch &epoch) {
@@ -59,21 +60,24 @@ std::optional<ReceiverState> SolveEpoch(const PositioningEpoch &epoch) {
 
   ReceiverState receiver{};
   const CorrectionContext context{};
-  Eigen::MatrixXd H(rowCount, 4);
-  Eigen::VectorXd residuals(rowCount);
+  LinearizedSystem linearizedSystem{
+      .jacobian = Eigen::MatrixXd(rowCount, 4),
+      .residuals = Eigen::VectorXd(rowCount),
+      .variances_m2 = Eigen::VectorXd(rowCount),
+  };
 
   constexpr int maxIterations = 20;
   constexpr double tolerance_m = 1e-3;
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
-    if (!LinearizeEpoch(epoch, receiver, context, H, residuals))
+    if (!LinearizeEpoch(epoch, receiver, context, linearizedSystem))
       return std::nullopt;
 
-    Eigen::MatrixXd weightedH = H;
-    Eigen::VectorXd weightedResiduals = residuals;
-    ApplyHuberWeights(weightedH, weightedResiduals);
+    Eigen::MatrixXd weightedH = linearizedSystem.jacobian;
+    Eigen::VectorXd weightedResiduals = linearizedSystem.residuals;
+    ApplyHuberWeights(weightedH, weightedResiduals, linearizedSystem.variances_m2);
 
     auto qr = weightedH.colPivHouseholderQr();
-    if (qr.rank() < H.cols())
+    if (qr.rank() < weightedH.cols())
       return std::nullopt;
 
     Eigen::Vector4d dx = qr.solve(weightedResiduals);
