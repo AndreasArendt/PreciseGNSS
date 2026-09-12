@@ -2,6 +2,7 @@
 #include <cmath>
 #include <optional>
 
+#include "coordinates/transformation.hpp"
 #include "estimation/robust_weighting.hpp"
 #include "positioning/estimators/spp_solver.hpp"
 #include "positioning/measurements/code_variance_model.hpp"
@@ -14,6 +15,18 @@ struct LinearizedSystem {
   Eigen::VectorXd residuals;
   Eigen::VectorXd variances_m2;
 };
+
+std::optional<double>
+calcElevationIfPossible(const Eigen::Vector3d &receiver_ecef,
+                        const Eigen::Vector3d &satellite_ecef) {
+
+  if (receiver_ecef.norm() == 0.0 || satellite_ecef.norm() == 0.0) {
+    return std::nullopt;
+  }
+
+  return std::optional<double>(
+      elevationFromEcef(receiver_ecef, satellite_ecef));
+}
 
 bool LinearizeEpoch(const PositioningEpoch &epoch,
                     const ReceiverState &receiver,
@@ -35,14 +48,22 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
       linearizedSystem.residuals(row) =
           observation.code.pseudorange_m - prediction.predicted_m;
 
-      linearizedSystem.variances_m2(row) = CodeVarianceModel(observation);
+      CodeVarianceContext codeVarContext{
+          .elevation_rad = calcElevationIfPossible(
+              receiver.position.vector(),
+              measurement.satelliteState.Position_E.vector()),
+          .cn0_dbhz = std::nullopt};
+
+      linearizedSystem.variances_m2(row) = CodeVarianceModel(observation, codeVarContext);
 
       for (Eigen::Index column = 0; column < 3; ++column) {
         linearizedSystem.jacobian(row, column) =
             prediction.d_predicted_d_receiver_position[column];
       }
+      
       linearizedSystem.jacobian(row, 3) =
           prediction.d_predicted_d_receiver_clock_bias;
+
       ++row;
     }
   }
@@ -67,7 +88,7 @@ std::optional<ReceiverState> SolveEpoch(const PositioningEpoch &epoch) {
       .variances_m2 = Eigen::VectorXd(rowCount),
   };
 
-  constexpr int maxIterations = 20;
+  constexpr int maxIterations = 100;
   constexpr double tolerance_m = 1e-3;
   for (int iteration = 0; iteration < maxIterations; ++iteration) {
     if (!LinearizeEpoch(epoch, receiver, context, linearizedSystem))
