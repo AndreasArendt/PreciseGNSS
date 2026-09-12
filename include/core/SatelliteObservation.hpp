@@ -18,12 +18,15 @@ struct SignalId
     auto operator<=>(const SignalId &) const = default;
 };
 
+struct SignalObservation{
+    std::optional<Rinex::Observation::Code> CodeObservation;
+    std::optional<Rinex::Observation::CarrierPhase> PhaseObservation;
+    std::optional<Rinex::Observation::Doppler> DopplerObservation;
+    std::optional<Rinex::Observation::SignalStrength> SnrObservation;
+};
+
 struct SatelliteObservation
 {
     SatelliteId satellite;
-
-    std::map<SignalId, Rinex::Observation::Code> CodeObservations;
-    std::map<SignalId, Rinex::Observation::CarrierPhase> PhaseObservations;
-    std::map<SignalId, Rinex::Observation::Doppler> DopplerObservations;
-    std::map<SignalId, Rinex::Observation::SignalStrength> SnrObservations;
+    std::map<SignalId, SignalObservation> signals;
 };

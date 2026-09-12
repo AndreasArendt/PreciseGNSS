@@ -35,12 +35,17 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
   Eigen::Index row = 0;
 
   for (const auto &measurement : epoch.measurements) {
-    for (const auto &codeObs : measurement.observations.CodeObservations) {
+    for (const auto &signal : measurement.observations.signals) {
+
+      const auto obs = signal.second;
+
+      if (!obs.CodeObservation)
+        continue;
+
       const CodeObservation observation{.satellite =
                                             measurement.observations.satellite,
-                                        .band = codeObs.first.band,
-                                        .attribute = codeObs.first.attribute,
-                                        .code = codeObs.second};
+                                        .signalId = signal.first,
+                                        .code = *obs.CodeObservation};
       PseudorangeModel model;
       const auto prediction = model.Evaluate(
           observation, receiver, measurement.satelliteState, context);
@@ -78,9 +83,13 @@ SolveEpoch(const PositioningEpoch &epoch,
 
   Eigen::Index rowCount = 0;
   for (const auto &measurement : epoch.measurements) {
-    rowCount += static_cast<Eigen::Index>(
-        measurement.observations.CodeObservations.size());
+    for (const auto &[signalId, observation] :
+         measurement.observations.signals) {
+      if (observation.CodeObservation)
+        ++rowCount;
+    }
   }
+
   if (rowCount < 4)
     return std::nullopt;
 

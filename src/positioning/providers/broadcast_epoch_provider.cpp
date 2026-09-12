@@ -6,50 +6,58 @@
 #include <ranges>
 #include <variant>
 
-PositioningEpoch BroadcastEpochProvider::GetEpoch(const ObservationEpoch &epoch) const
-{
-    PositioningEpoch result{
-        .receptionTime = epoch.time.Time(),
-        .measurements = {},
-    };
+PositioningEpoch
+BroadcastEpochProvider::GetEpoch(const ObservationEpoch &epoch) const {
+  PositioningEpoch result{
+      .receptionTime = epoch.time.Time(),
+      .measurements = {},
+  };
 
-    const navigation::GnssTime receptionTime = epoch.time.Time();
+  const navigation::GnssTime receptionTime = epoch.time.Time();
 
-    for (const SatelliteObservation &obs : epoch.satellites)
-    {
-        // find obs satellite in nav
-        const auto navSatellite = std::ranges::find(this->_navigation.satellites, obs.satellite, &SatelliteNavigation::satellite);
+  for (const SatelliteObservation &obs : epoch.satellites) {
+    // find obs satellite in nav
+    const auto navSatellite =
+        std::ranges::find(this->_navigation.satellites, obs.satellite,
+                          &SatelliteNavigation::satellite);
 
-        // did not find any
-        if (navSatellite == this->_navigation.satellites.end())
-            continue;
+    // did not find any
+    if (navSatellite == this->_navigation.satellites.end())
+      continue;
 
-        if (obs.CodeObservations.empty())
-            continue;
+    const auto signal =
+        std::ranges::find_if(obs.signals, [](const auto &entry) {
+          return entry.second.CodeObservation.has_value();
+        });
 
-        const double pseudorange = obs.CodeObservations.begin()->second.pseudorange_m;
+    if (signal == obs.signals.end())
+      continue;
 
-        const auto signalTravelTime = navigation::Seconds{pseudorange / constants::SpeedOfLight__mDs};
-        const auto transmissionTime = navigation::GnssTime{
-            std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
+    const double pseudorange = signal->second.CodeObservation->pseudorange_m;
 
-        const NavigationMessage *message = navSatellite->FindMessage(transmissionTime);
+    const auto signalTravelTime =
+        navigation::Seconds{pseudorange / constants::SpeedOfLight__mDs};
+    const auto transmissionTime = navigation::GnssTime{
+        std::chrono::round<navigation::GnssClock::duration>(receptionTime -
+                                                            signalTravelTime)};
 
-        if (!message)
-            continue;
+    const NavigationMessage *message =
+        navSatellite->FindMessage(transmissionTime);
 
-        const SatelliteState state = std::visit(
-            [&](const auto &nav)
-            {
-                return navigation::CalculateEphemeris(nav, transmissionTime);
-            },
-            *message);
+    if (!message)
+      continue;
 
-        result.measurements.push_back(SatelliteMeasurement{
-            .observations = obs,
-            .satelliteState = state,
-            .approximateTravelTime = signalTravelTime});
-    }
+    const SatelliteState state = std::visit(
+        [&](const auto &nav) {
+          return navigation::CalculateEphemeris(nav, transmissionTime);
+        },
+        *message);
 
-    return result;
+    result.measurements.push_back(
+        SatelliteMeasurement{.observations = obs,
+                             .satelliteState = state,
+                             .approximateTravelTime = signalTravelTime});
+  }
+
+  return result;
 }

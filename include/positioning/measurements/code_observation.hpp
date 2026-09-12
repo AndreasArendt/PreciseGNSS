@@ -2,14 +2,12 @@
 
 #include "core/satellite_id.hpp"
 #include "rinex/Observations.hpp"
-#include "rinex/RinexTypes/ObservationAttribute.hpp"
-#include "rinex/RinexTypes/ObservationBand.hpp"
+#include "core/SatelliteObservation.hpp"
 
 // One code measurement for a satellite and signal at the evaluated epoch.
 struct CodeObservation
 {
     SatelliteId satellite;
-    ObservationBand band{ObservationBand::Band_Unkown};
-    ObservationAttribute attribute{ObservationAttribute::Channel_Unknown};
+    SignalId signalId;
     Rinex::Observation::Code code{};
 };
