@@ -57,7 +57,9 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
           .elevation_rad = calcElevationIfPossible(
               receiver.position.vector(),
               measurement.satelliteState.Position_E.vector()),
-          .cn0_dbhz = std::nullopt};
+          .cn0_dbhz = obs.SnrObservation
+                          ? std::optional<double>{obs.SnrObservation->snr}
+                          : std::nullopt};
 
       linearizedSystem.variances_m2(row) =
           CodeVarianceModel(observation, codeVarContext);
