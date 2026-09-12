@@ -103,33 +103,35 @@ void RinexObsParser::ReadEpochObservation(std::string line)
             continue;
         }
 
+        const SignalId signal{obsDef.GetObservationBand(), obsDef.GetObservationAttribute()};
+
         switch (obsDef.GetObservationType())
         {
         case ObservationType::Code: // Pseudorange
         {
             double psuedorange = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().CodeObservations.emplace(obsDef.GetObservationBand(), psuedorange);
+            this->_Epochs.back().satellites.back().CodeObservations.emplace(signal, psuedorange);
 
             break;
         }
         case ObservationType::Phase: // Carrierphase
         {
             double cycles = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().PhaseObservations.emplace(obsDef.GetObservationBand(), cycles);
+            this->_Epochs.back().satellites.back().PhaseObservations.emplace(signal, cycles);
 
             break;
         }
         case ObservationType::Doppler:
         {
             double doppler = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().DopplerObservations.emplace(obsDef.GetObservationBand(), doppler);
+            this->_Epochs.back().satellites.back().DopplerObservations.emplace(signal, doppler);
 
             break;
         }
         case ObservationType::RawSignalStrength:
         {
             double snr = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().SnrObservations.emplace(obsDef.GetObservationBand(), snr);
+            this->_Epochs.back().satellites.back().SnrObservations.emplace(signal, snr);
 
             break;
         }

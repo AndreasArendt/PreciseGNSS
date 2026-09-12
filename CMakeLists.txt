@@ -75,4 +75,5 @@ if(GNSS_RTK_BUILD_TESTS)
     )
 
     add_test(NAME wgs84_roundtrip COMMAND wgs84_test)
+    add_test(NAME rinex_signal_identity COMMAND rinex_signal_identity_test)
 endif()
