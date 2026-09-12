@@ -39,6 +39,7 @@ RinexFile RinexParser::Parse(const std::filesystem::path& path) const
         result.version = parser.Version();
         result.approximateMarkerPosition = parser.ApproximateMarkerPosition();
         result.antennaOffset = parser.AntennaOffset();
+        result.signalStrengthUnit = parser.SignalStrengthUnit();
         return result;
     }
 

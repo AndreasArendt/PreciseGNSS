@@ -14,6 +14,7 @@
 #include "core/epoch.hpp"
 #include "core/ObservationEpoch.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -24,6 +25,7 @@ class RinexObsParser
 
 private:
     std::string _Version;
+    std::optional<std::string> _SignalStrengthUnit;
     std::unordered_map<SvSystem, std::vector<ObservationDefinition>> _ObservationDefinitions;
     RinexParserState _RinexParserState = RinexParserState::PARSE_HEADER;
     ECEF_Position _ApproximateMarkerPosition;
@@ -38,6 +40,8 @@ private:
     void InitParser();
 
 public:
+    const std::optional<std::string>& SignalStrengthUnit() const { return _SignalStrengthUnit; }
+
     // getters
     std::string const &Version() const { return _Version; }
     ECEF_Position const &ApproximateMarkerPosition() const { return _ApproximateMarkerPosition; }

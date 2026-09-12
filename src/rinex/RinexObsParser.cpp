@@ -13,6 +13,7 @@
 #include "rinex/detail/string_utils.hpp"
 #include "rinex/detail/line_reader.hpp"
 
+#include <stdexcept>
 #include <utility>
 #include <iostream>
 
@@ -103,6 +104,17 @@ void RinexObsParser::ReadEpochObservation(std::string line)
             continue;
         }
 
+        const auto indicator = [&](std::size_t offset, unsigned int maximum)
+            -> std::optional<unsigned int> {
+            if (offset >= line.size() || line[offset] == ' ' || line[offset] == '\r')
+                return std::nullopt;
+            if (line[offset] < '0' || line[offset] > static_cast<char>('0' + maximum))
+                throw std::runtime_error("Invalid RINEX quality indicator");
+            return static_cast<unsigned int>(line[offset] - '0');
+        };
+        const Rinex::Observation::QualityIndicators quality{
+            .lli = indicator(StartIndex + 14, 7),
+            .ssi = indicator(StartIndex + 15, 9)};
         const SignalId signal{obsDef.GetObservationBand(), obsDef.GetObservationAttribute()};
 
         switch (obsDef.GetObservationType())
@@ -110,28 +122,28 @@ void RinexObsParser::ReadEpochObservation(std::string line)
         case ObservationType::Code: // Pseudorange
         {
             double psuedorange = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().CodeObservations.emplace(signal, psuedorange);
+            this->_Epochs.back().satellites.back().CodeObservations.emplace(signal, Rinex::Observation::Code{psuedorange, quality});
 
             break;
         }
         case ObservationType::Phase: // Carrierphase
         {
             double cycles = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().PhaseObservations.emplace(signal, cycles);
+            this->_Epochs.back().satellites.back().PhaseObservations.emplace(signal, Rinex::Observation::CarrierPhase{cycles, quality});
 
             break;
         }
         case ObservationType::Doppler:
         {
             double doppler = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().DopplerObservations.emplace(signal, doppler);
+            this->_Epochs.back().satellites.back().DopplerObservations.emplace(signal, Rinex::Observation::Doppler{doppler, quality});
 
             break;
         }
         case ObservationType::RawSignalStrength:
         {
             double snr = util::astring::parseDouble(data);
-            this->_Epochs.back().satellites.back().SnrObservations.emplace(signal, snr);
+            this->_Epochs.back().satellites.back().SnrObservations.emplace(signal, Rinex::Observation::SignalStrength{snr, quality});
 
             break;
         }
@@ -175,6 +187,9 @@ void RinexObsParser::ReadObservationTypes(std::string line)
 
 void RinexObsParser::ParseLine(std::string line)
 {
+    if (line.empty())
+        return;
+
     switch (_RinexParserState)
     {
     case RinexParserState::PARSE_HEADER:
@@ -206,6 +221,14 @@ void RinexObsParser::ParseLine(std::string line)
 
             this->_AntennaOffset = Position(x, y, z);
         }
+        else if (line.find("SIGNAL STRENGTH UNIT") != std::string::npos)
+        {
+            const std::string unit = line.substr(0, 20);
+            const auto first = unit.find_first_not_of(' ');
+            _SignalStrengthUnit = first == std::string::npos
+                ? std::nullopt
+                : std::optional<std::string>{unit.substr(first, unit.find_last_not_of(' ') - first + 1)};
+        }
         else if ((line.find(RINEX_OBS_TYPE_DEFINITION) != std::string::npos)) // read all observation types from rnx header
         {
             _RinexParserState = RinexParserState::PARSE_OBS_TYPES;
@@ -223,6 +246,7 @@ void RinexObsParser::ParseLine(std::string line)
         else
         {
             _RinexParserState = RinexParserState::PARSE_HEADER;
+            this->ParseLine(std::move(line));
         }
         break;
     }
@@ -254,4 +278,6 @@ void RinexObsParser::ParseLine(std::string line)
 void RinexObsParser::InitParser()
 {
     this->_RinexParserState = RinexParserState::PARSE_HEADER;
+    _SignalStrengthUnit.reset();
+    _ObservationDefinitions.clear();
 }

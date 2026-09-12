@@ -14,6 +14,10 @@ struct LinearizedSystem {
   Eigen::VectorXd variances_m2;
 };
 
+double ObservationVarianceModel(){
+  
+}
+
 bool LinearizeEpoch(const PositioningEpoch &epoch,
                     const ReceiverState &receiver,
                     const CorrectionContext &context,
@@ -24,8 +28,8 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
     for (const auto &codeObs : measurement.observations.CodeObservations) {
       const CodeObservation observation{
           .satellite = measurement.observations.satellite,
-          .band = codeObs.first,
-          .attribute = ObservationAttribute::Channel_Unknown,
+          .band = codeObs.first.band,
+          .attribute = codeObs.first.attribute,
           .pseudorange_m = codeObs.second.pseudorange_m};
       PseudorangeModel model;
       const auto prediction = model.Evaluate(

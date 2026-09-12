@@ -7,6 +7,7 @@
 #include "rinex/RinexTypes/IonosphericCorrection.hpp"
 #include "rinex/RinexTypes/TimeSystemCorrection.hpp"
 
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -16,6 +17,8 @@ struct ObservationFile {
     ECEF_Position approximateMarkerPosition;
     Position antennaOffset;
     std::vector<ObservationEpoch> epochs;
+    // Header value (typically DBHZ); absent means unspecified.
+    std::optional<std::string> signalStrengthUnit;
 };
 
 struct NavigationFile {
