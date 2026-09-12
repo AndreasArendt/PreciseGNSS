@@ -18,11 +18,25 @@ calcElevationIfPossible(const Eigen::Vector3d &receiver_ecef,
 
 } // namespace
 
-bool LinearizeEpoch(const PositioningEpoch &epoch,
-                    const ReceiverState &receiver,
-                    const CorrectionContext &context,
-                    LinearizedSystem &linearizedSystem) {
+std::optional<LinearizedSystem>
+LinearizePseudorangeEpoch(const PositioningEpoch &epoch,
+                          const ReceiverState &receiver,
+                          const CorrectionContext &context) {
   Eigen::Index row = 0;
+  Eigen::Index rowCount = 0;
+  for (const auto &measurement : epoch.measurements) {
+    for (const auto &[signalId, observation] :
+         measurement.observations.signals) {
+      if (observation.CodeObservation)
+        ++rowCount;
+    }
+  }
+
+  LinearizedSystem linearizedSystem{
+      .jacobian = Eigen::MatrixXd(rowCount, 4),
+      .residuals = Eigen::VectorXd(rowCount),
+      .variances_m2 = Eigen::VectorXd(rowCount),
+  };
 
   for (const auto &measurement : epoch.measurements) {
     for (const auto &signal : measurement.observations.signals) {
@@ -66,6 +80,14 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
       ++row;
     }
   }
-  return linearizedSystem.jacobian.allFinite() &&
-         linearizedSystem.residuals.allFinite();
+
+  // nonfinite
+  if (!linearizedSystem.jacobian.allFinite() ||
+      !linearizedSystem.residuals.allFinite() ||
+      !linearizedSystem.variances_m2.allFinite() ||
+      (linearizedSystem.variances_m2.array() <= 0.0).any()) {
+    return std::nullopt;
+  }
+
+  return linearizedSystem;
 }

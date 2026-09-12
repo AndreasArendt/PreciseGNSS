@@ -10,19 +10,8 @@ namespace {
 
 std::optional<ReceiverState>
 SolveEpoch(const PositioningEpoch &epoch,
-           const std::optional<ReceiverState> &initial) {
-
-  Eigen::Index rowCount = 0;
-  for (const auto &measurement : epoch.measurements) {
-    for (const auto &[signalId, observation] :
-         measurement.observations.signals) {
-      if (observation.CodeObservation)
-        ++rowCount;
-    }
-  }
-
-  if (rowCount < 4)
-    return std::nullopt;
+           const std::optional<ReceiverState> &initial,
+           const SolverConfig& solverConfig) {
 
   // get initial guess
   ReceiverState receiver{};
@@ -31,22 +20,19 @@ SolveEpoch(const PositioningEpoch &epoch,
   }
 
   const CorrectionContext context{};
-  LinearizedSystem linearizedSystem{
-      .jacobian = Eigen::MatrixXd(rowCount, 4),
-      .residuals = Eigen::VectorXd(rowCount),
-      .variances_m2 = Eigen::VectorXd(rowCount),
-  };
 
-  constexpr int maxIterations = 100;
-  constexpr double tolerance_m = 1e-3;
-  for (int iteration = 0; iteration < maxIterations; ++iteration) {
-    if (!LinearizeEpoch(epoch, receiver, context, linearizedSystem))
+  for (int iteration = 0; iteration < solverConfig.maxIterations; ++iteration) {
+    const auto linearizedSystem =
+        LinearizePseudorangeEpoch(epoch, receiver, context);
+
+    if (!linearizedSystem ||
+        linearizedSystem->jacobian.rows() < linearizedSystem->jacobian.cols())
       return std::nullopt;
 
-    Eigen::MatrixXd weightedH = linearizedSystem.jacobian;
-    Eigen::VectorXd weightedResiduals = linearizedSystem.residuals;
+    Eigen::MatrixXd weightedH = linearizedSystem->jacobian;
+    Eigen::VectorXd weightedResiduals = linearizedSystem->residuals;
     ApplyHuberWeights(weightedH, weightedResiduals,
-                      linearizedSystem.variances_m2);
+                      linearizedSystem->variances_m2);
 
     auto qr = weightedH.colPivHouseholderQr();
     if (qr.rank() < weightedH.cols())
@@ -61,7 +47,8 @@ SolveEpoch(const PositioningEpoch &epoch,
                                       receiver.position.z() + dx(2)};
     receiver.clockBias_m += dx(3);
 
-    if (dx.head<3>().norm() < tolerance_m && std::abs(dx(3)) < tolerance_m) {
+    if (dx.head<3>().norm() < solverConfig.position_tolerance_m &&
+        std::abs(dx(3)) < solverConfig.clock_tolerance_m) {
       const Eigen::Matrix4d inverseR = qr.matrixR()
                                            .topLeftCorner<4, 4>()
                                            .triangularView<Eigen::Upper>()
@@ -82,7 +69,8 @@ SolveEpoch(const PositioningEpoch &epoch,
 } // namespace
 
 std::vector<SPPState>
-SPPSolver::Solve(const std::vector<PositioningEpoch> &epochs) {
+SPPSolver::Solve(const std::vector<PositioningEpoch> &epochs,
+                 const SolverConfig &solverConfig) {
   std::vector<SPPState> states;
   states.reserve(epochs.size());
 
@@ -90,7 +78,7 @@ SPPSolver::Solve(const std::vector<PositioningEpoch> &epochs) {
   for (const auto &epoch : epochs) {
 
     // passing initial/previous receiverState
-    receiverState = SolveEpoch(epoch, receiverState);
+    receiverState = SolveEpoch(epoch, receiverState, solverConfig);
 
     states.push_back(
         {.receiverState = receiverState, .epochtime = epoch.receptionTime});
