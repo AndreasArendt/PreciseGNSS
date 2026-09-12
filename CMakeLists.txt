@@ -25,6 +25,7 @@ add_library(gnss_rtk STATIC
     src/rinex/RinexParser.cpp
     src/positioning/providers/broadcast_epoch_provider.cpp
     src/positioning/measurements/pseudorange_model.cpp
+    src/positioning/measurements/code_variance_model.cpp
     src/positioning/estimators/spp_solver.cpp
 )
 

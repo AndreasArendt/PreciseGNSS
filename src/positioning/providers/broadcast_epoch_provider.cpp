@@ -1,5 +1,5 @@
 #include "positioning/providers/broadcast_epoch_provider.hpp"
-#include "coordinates/transformation.hpp"
+#include "core/constants.hpp"
 #include "navigation/ephemeris_traits.hpp"
 
 #include <chrono>
@@ -29,7 +29,7 @@ PositioningEpoch BroadcastEpochProvider::GetEpoch(const ObservationEpoch &epoch)
 
         const double pseudorange = obs.CodeObservations.begin()->second.pseudorange_m;
 
-        const auto signalTravelTime = navigation::Seconds{pseudorange / Transformation::SpeedOfLight__mDs};
+        const auto signalTravelTime = navigation::Seconds{pseudorange / constants::SpeedOfLight__mDs};
         const auto transmissionTime = navigation::GnssTime{
             std::chrono::round<navigation::GnssClock::duration>(receptionTime - signalTravelTime)};
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/satellite_id.hpp"
+#include "rinex/Observations.hpp"
 #include "rinex/RinexTypes/ObservationAttribute.hpp"
 #include "rinex/RinexTypes/ObservationBand.hpp"
 
@@ -10,5 +11,5 @@ struct CodeObservation
     SatelliteId satellite;
     ObservationBand band{ObservationBand::Band_Unkown};
     ObservationAttribute attribute{ObservationAttribute::Channel_Unknown};
-    double pseudorange_m{};
+    Rinex::Observation::Code code{};
 };

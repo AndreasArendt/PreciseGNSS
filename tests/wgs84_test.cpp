@@ -18,15 +18,15 @@ int fail(const char* label, const double expected, const double actual) {
 }  // namespace
 
 int main() {
-    const gnss_rtk::Lla berlin{
+    const constants::Lla berlin{
         52.520008,
         13.404954,
         45.0,
     };
 
-    const gnss_rtk::Ecef ecef = gnss_rtk::lla_to_ecef(berlin);
-    const gnss_rtk::Lla round_trip = gnss_rtk::ecef_to_lla(ecef);
-    const gtsam::Point3 point = gnss_rtk::to_gtsam_point3(ecef);
+    const constants::Ecef ecef = constants::lla_to_ecef(berlin);
+    const constants::Lla round_trip = constants::ecef_to_lla(ecef);
+    const gtsam::Point3 point = constants::to_gtsam_point3(ecef);
 
     if (!nearly_equal(berlin.latitude_deg, round_trip.latitude_deg, 1.0e-6)) {
         return fail("latitude", berlin.latitude_deg, round_trip.latitude_deg);

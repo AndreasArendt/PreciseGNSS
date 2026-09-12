@@ -1,5 +1,5 @@
 #include "navigation/kepler_orbit.hpp"
-#include "coordinates/transformation.hpp"
+#include "core/constants.hpp"
 
 #include <math.h>
 
@@ -11,7 +11,7 @@ double KeplerOrbit::CalcMeanAnomaly(const KeplerOrbitData &orbitData, navigation
 	double A = orbitData.SqrtA___sqrtm * orbitData.SqrtA___sqrtm;
 
 	// Computed mean motion (rad/s)
-	double n_0 = std::sqrt(Transformation::GravitationalConstant__m3Ds2 / pow(A, 3));
+	double n_0 = std::sqrt(constants::GravitationalConstant__m3Ds2 / pow(A, 3));
 
 	// Corrected mean motion
 	double n = n_0 + orbitData.DeltaN__radDs;
@@ -43,7 +43,7 @@ KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation:
 	double E = this->CalcMeanAnomaly(orbitData, transmitTime);
 
 	// Relativistic Error Correction
-	double F = -2 * std::sqrt(Transformation::GravitationalConstant__m3Ds2) / (std::pow(Transformation::SpeedOfLight__mDs,2));
+	double F = -2 * std::sqrt(constants::GravitationalConstant__m3Ds2) / (std::pow(constants::SpeedOfLight__mDs,2));
 	keplerState.relativisticCorrection = navigation::Seconds{F * orbitData.Eccentricity * orbitData.SqrtA___sqrtm * sin(E)};
 	
 	navigation::Seconds t_k{transmitTime - orbitData.toeEpoch};
@@ -84,8 +84,8 @@ KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation:
 
 	// Corrected langitude of ascending node
 	double OMEGA = orbitData.Omega0__rad +
-				   (orbitData.Omega_dot__radDs - Transformation::MeanAngularVelocityOfEarth__radDs) * t_k.count() -
-				   Transformation::MeanAngularVelocityOfEarth__radDs * orbitData.toe.count();
+				   (orbitData.Omega_dot__radDs - constants::MeanAngularVelocityOfEarth__radDs) * t_k.count() -
+				   constants::MeanAngularVelocityOfEarth__radDs * orbitData.toe.count();
 
 	// GTRF coordinates of the SV antenna phase center position at time t
 	double x = x_prime * cos(OMEGA) - y_prime * cos(i) * sin(OMEGA);
@@ -97,7 +97,7 @@ KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation:
 	// ==================================================
 
 	// Computed mean motion (rad/s)
-	double n_0 = sqrt(Transformation::GravitationalConstant__m3Ds2 / pow(A, 3));
+	double n_0 = sqrt(constants::GravitationalConstant__m3Ds2 / pow(A, 3));
 
 	// Corrected mean motion
 	double n = n_0 + orbitData.DeltaN__radDs;
@@ -116,7 +116,7 @@ KeplerState KeplerOrbit::Propagate(const KeplerOrbitData &orbitData, navigation:
 	double r_dot = orbitData.Eccentricity * A * Ek_dot * sin(E) +
 				   2 * vk_dot * (orbitData.Crs__m * cos(2 * phi) - orbitData.Crc__m * sin(2 * phi)); // (5)
 
-	double Omegak_dot = orbitData.Omega_dot__radDs - Transformation::MeanAngularVelocityOfEarth__radDs; // (6)
+	double Omegak_dot = orbitData.Omega_dot__radDs - constants::MeanAngularVelocityOfEarth__radDs; // (6)
 
 	// In plane x,y velocity
 	double x_prime_dot = r_dot * cos(u) - r * u_dot * sin(u); // (7)

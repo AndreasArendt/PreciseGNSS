@@ -15,14 +15,14 @@ double rad_to_deg(const double radians) {
 
 }  // namespace
 
-namespace gnss_rtk {
+namespace constants {
 
 Ecef lla_to_ecef(const Lla& lla) {
     const double latitude_rad = deg_to_rad(lla.latitude_deg);
     const double longitude_rad = deg_to_rad(lla.longitude_deg);
 
     const double first_eccentricity_squared =
-        kWgs84Flattening * (2.0 - kWgs84Flattening);
+        kWgs84FirstEccentricitySquared;
 
     const double sin_latitude = std::sin(latitude_rad);
     const double cos_latitude = std::cos(latitude_rad);
@@ -30,7 +30,7 @@ Ecef lla_to_ecef(const Lla& lla) {
     const double cos_longitude = std::cos(longitude_rad);
 
     const double prime_vertical_radius =
-        kWgs84SemiMajorAxisM /
+        WGS84SemiMajorAxis__m /
         std::sqrt(1.0 - first_eccentricity_squared * sin_latitude * sin_latitude);
 
     return {
@@ -43,31 +43,31 @@ Ecef lla_to_ecef(const Lla& lla) {
 
 Lla ecef_to_lla(const Ecef& ecef) {
     const double first_eccentricity_squared =
-        kWgs84Flattening * (2.0 - kWgs84Flattening);
+        kWgs84FirstEccentricitySquared;
     const double second_eccentricity_squared =
-        (kWgs84SemiMajorAxisM * kWgs84SemiMajorAxisM -
-         kWgs84SemiMinorAxisM * kWgs84SemiMinorAxisM) /
-        (kWgs84SemiMinorAxisM * kWgs84SemiMinorAxisM);
+        (WGS84SemiMajorAxis__m * WGS84SemiMajorAxis__m -
+         WGS84SemiMinorAxis__m * WGS84SemiMinorAxis__m) /
+        (WGS84SemiMinorAxis__m * WGS84SemiMinorAxis__m);
 
     const double p = std::hypot(ecef.x_m, ecef.y_m);
     const double theta =
-        std::atan2(ecef.z_m * kWgs84SemiMajorAxisM, p * kWgs84SemiMinorAxisM);
+        std::atan2(ecef.z_m * WGS84SemiMajorAxis__m, p * WGS84SemiMinorAxis__m);
 
     const double sin_theta = std::sin(theta);
     const double cos_theta = std::cos(theta);
 
     const double latitude_rad = std::atan2(
         ecef.z_m +
-            second_eccentricity_squared * kWgs84SemiMinorAxisM * sin_theta * sin_theta *
+            second_eccentricity_squared * WGS84SemiMinorAxis__m * sin_theta * sin_theta *
                 sin_theta,
-        p - first_eccentricity_squared * kWgs84SemiMajorAxisM * cos_theta * cos_theta *
+        p - first_eccentricity_squared * WGS84SemiMajorAxis__m * cos_theta * cos_theta *
                 cos_theta);
 
     const double longitude_rad = std::atan2(ecef.y_m, ecef.x_m);
     const double sin_latitude = std::sin(latitude_rad);
 
     const double prime_vertical_radius =
-        kWgs84SemiMajorAxisM /
+        WGS84SemiMajorAxis__m /
         std::sqrt(1.0 - first_eccentricity_squared * sin_latitude * sin_latitude);
 
     double altitude_m = 0.0;
@@ -97,4 +97,4 @@ gtsam::Point3 to_gtsam_point3(const Ecef& ecef) {
     return {ecef.x_m, ecef.y_m, ecef.z_m};
 }
 
-}  // namespace gnss_rtk
+}  // namespace constants

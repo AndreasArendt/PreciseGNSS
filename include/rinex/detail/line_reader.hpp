@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 
-namespace gnss_rtk::rinex::detail {
+namespace constants::rinex::detail {
 
 template <typename LineHandler>
 void for_each_line(std::istream& input, LineHandler&& handle_line) {
@@ -14,4 +14,4 @@ void for_each_line(std::istream& input, LineHandler&& handle_line) {
     }
 }
 
-}  // namespace gnss_rtk::rinex::detail
+}  // namespace constants::rinex::detail

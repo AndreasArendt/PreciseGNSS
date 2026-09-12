@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "coordinates/transformation.hpp"
+#include "core/constants.hpp"
 #include "positioning/measurements/pseudorange_model.hpp"
 
 // Pseudorange model: p^s_r + c(\delta t_r - \delta t^s) + T + I + e
@@ -21,22 +21,22 @@ PseudorangePrediction PseudorangeModel::Evaluate(
 
   // todo use proper cross product function later! ([0;0;w] x [x;y;z]^s)
   std::vector<double> cross_w_x_xsv{
-      -Transformation::MeanAngularVelocityOfEarth__radDs *
+      -constants::MeanAngularVelocityOfEarth__radDs *
           satellite.Position_E.y(),
-      Transformation::MeanAngularVelocityOfEarth__radDs *
+      constants::MeanAngularVelocityOfEarth__radDs *
           satellite.Position_E.x(),
       0};
 
   double sagnac__m =
       -(delta_pos.x() * cross_w_x_xsv[0] + delta_pos.y() * cross_w_x_xsv[1] +
         delta_pos.z() * cross_w_x_xsv[2]) /
-      Transformation::SpeedOfLight__mDs;
+      constants::SpeedOfLight__mDs;
 
   navigation::Seconds sv_clock_bias =
       satellite.clock.bias + satellite.relativisticClockBias;
 
   double sv_clock_error__m =
-      Transformation::SpeedOfLight__mDs * sv_clock_bias.count();
+      constants::SpeedOfLight__mDs * sv_clock_bias.count();
 
   double predicted__m = geometric_distance__m +
                         (receiver.clockBias_m - sv_clock_error__m) + sagnac__m +
@@ -47,10 +47,10 @@ PseudorangePrediction PseudorangeModel::Evaluate(
       .predicted_m = predicted__m,
       .d_predicted_d_receiver_position{
           -delta_pos.x() / geometric_distance__m +
-              cross_w_x_xsv[0] / Transformation::SpeedOfLight__mDs,
+              cross_w_x_xsv[0] / constants::SpeedOfLight__mDs,
 
           -delta_pos.y() / geometric_distance__m +
-              cross_w_x_xsv[1] / Transformation::SpeedOfLight__mDs,
+              cross_w_x_xsv[1] / constants::SpeedOfLight__mDs,
 
           -delta_pos.z() / geometric_distance__m,
       },

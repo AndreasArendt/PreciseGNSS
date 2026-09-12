@@ -2,7 +2,9 @@
 
 #include <gtsam/geometry/Point3.h>
 
-namespace gnss_rtk {
+#include "core/constants.hpp"
+
+namespace constants {
 
 struct Lla {
     double latitude_deg{};
@@ -16,14 +18,9 @@ struct Ecef {
     double z_m{};
 };
 
-constexpr double kWgs84SemiMajorAxisM = 6378137.0;
-constexpr double kWgs84Flattening = 1.0 / 298.257223563;
-constexpr double kWgs84SemiMinorAxisM =
-    kWgs84SemiMajorAxisM * (1.0 - kWgs84Flattening);
-
 Ecef lla_to_ecef(const Lla& lla);
 Lla ecef_to_lla(const Ecef& ecef);
 double distance_m(const Ecef& lhs, const Ecef& rhs);
 gtsam::Point3 to_gtsam_point3(const Ecef& ecef);
 
-}  // namespace gnss_rtk
+}  // namespace constants

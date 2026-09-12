@@ -1,12 +1,7 @@
 #pragma once
 
-class Transformation {
+#include <Eigen/Core>
 
-private:
-	Transformation() {};
-	~Transformation() {};
-public:
-	static const double GravitationalConstant__m3Ds2;
-	static const double MeanAngularVelocityOfEarth__radDs;
-	static const double SpeedOfLight__mDs;
-};
+// Returns elevation in radians.
+double elevationFromEcef(const Eigen::Vector3d &receiver_ecef,
+                         const Eigen::Vector3d &satellite_ecef);

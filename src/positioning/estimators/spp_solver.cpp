@@ -4,6 +4,7 @@
 
 #include "estimation/robust_weighting.hpp"
 #include "positioning/estimators/spp_solver.hpp"
+#include "positioning/measurements/code_variance_model.hpp"
 #include "positioning/measurements/pseudorange_model.hpp"
 
 namespace {
@@ -14,10 +15,6 @@ struct LinearizedSystem {
   Eigen::VectorXd variances_m2;
 };
 
-double ObservationVarianceModel(){
-  
-}
-
 bool LinearizeEpoch(const PositioningEpoch &epoch,
                     const ReceiverState &receiver,
                     const CorrectionContext &context,
@@ -26,19 +23,19 @@ bool LinearizeEpoch(const PositioningEpoch &epoch,
 
   for (const auto &measurement : epoch.measurements) {
     for (const auto &codeObs : measurement.observations.CodeObservations) {
-      const CodeObservation observation{
-          .satellite = measurement.observations.satellite,
-          .band = codeObs.first.band,
-          .attribute = codeObs.first.attribute,
-          .pseudorange_m = codeObs.second.pseudorange_m};
+      const CodeObservation observation{.satellite =
+                                            measurement.observations.satellite,
+                                        .band = codeObs.first.band,
+                                        .attribute = codeObs.first.attribute,
+                                        .code = codeObs.second};
       PseudorangeModel model;
       const auto prediction = model.Evaluate(
           observation, receiver, measurement.satelliteState, context);
 
       linearizedSystem.residuals(row) =
-          observation.pseudorange_m - prediction.predicted_m;
+          observation.code.pseudorange_m - prediction.predicted_m;
 
-      linearizedSystem.variances_m2(row) = 5.0 * 5.0;
+      linearizedSystem.variances_m2(row) = CodeVarianceModel(observation);
 
       for (Eigen::Index column = 0; column < 3; ++column) {
         linearizedSystem.jacobian(row, column) =
@@ -78,7 +75,8 @@ std::optional<ReceiverState> SolveEpoch(const PositioningEpoch &epoch) {
 
     Eigen::MatrixXd weightedH = linearizedSystem.jacobian;
     Eigen::VectorXd weightedResiduals = linearizedSystem.residuals;
-    ApplyHuberWeights(weightedH, weightedResiduals, linearizedSystem.variances_m2);
+    ApplyHuberWeights(weightedH, weightedResiduals,
+                      linearizedSystem.variances_m2);
 
     auto qr = weightedH.colPivHouseholderQr();
     if (qr.rank() < weightedH.cols())

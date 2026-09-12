@@ -39,7 +39,7 @@ void RinexNavParser::StoreCurrentNavData()
 void RinexNavParser::Parse(std::istream& input)
 {
 	this->InitParser();
-	gnss_rtk::rinex::detail::for_each_line(input, [this](std::string line) {
+	constants::rinex::detail::for_each_line(input, [this](std::string line) {
 		this->ParseLine(std::move(line));
 	});
 	this->StoreCurrentNavData();
