@@ -6,11 +6,11 @@
 namespace {
 
 double deg_to_rad(const double degrees) {
-    return degrees * std::numbers::phi / 180.0;
+    return degrees * std::numbers::pi / 180.0;
 }
 
 double rad_to_deg(const double radians) {
-    return radians * 180.0 / std::numbers::phi;
+    return radians * 180.0 / std::numbers::pi;
 }
 
 }  // namespace

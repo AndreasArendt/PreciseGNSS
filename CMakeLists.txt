@@ -28,6 +28,7 @@ add_library(gnss_rtk STATIC
     src/positioning/measurements/code_variance_model.cpp
     src/positioning/estimators/spp_solver.cpp
     src/positioning/linearization/pseudorange_linearizer.cpp
+    src/positioning/corrections/saastamoinen.cpp
 )
 
 target_include_directories(gnss_rtk
@@ -78,4 +79,5 @@ if(GNSS_RTK_BUILD_TESTS)
 
     add_test(NAME wgs84_roundtrip COMMAND wgs84_test)
     add_test(NAME rinex_signal_identity COMMAND rinex_signal_identity_test)
+    add_test(NAME troposphere_model COMMAND troposphere_test)
 endif()

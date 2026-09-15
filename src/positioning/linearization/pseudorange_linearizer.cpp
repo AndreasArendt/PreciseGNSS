@@ -1,6 +1,10 @@
-#include "positioning/measurements/linearization/pseudorange_linearizer.hpp"
+#include <numbers>
+
 #include "coordinates/transformation.hpp"
+#include "core/constants.hpp"
+#include "positioning/corrections/troposphere/saastamoinen.hpp"
 #include "positioning/measurements/code_variance_model.hpp"
+#include "positioning/measurements/linearization/pseudorange_linearizer.hpp"
 #include "positioning/measurements/pseudorange_model.hpp"
 
 namespace {
@@ -46,10 +50,25 @@ LinearizePseudorangeEpoch(const PositioningEpoch &epoch,
       if (!obs.CodeObservation)
         continue;
 
+      std::optional<double> optionalElvation = calcElevationIfPossible(
+          receiver.position.vector(),
+          measurement.satelliteState.Position_E.vector());
+
+      double elevation_rad = optionalElvation ? *optionalElvation : 0;
+
       const CodeObservation observation{.satellite =
                                             measurement.observations.satellite,
                                         .signalId = signal.first,
                                         .code = *obs.CodeObservation};
+
+      troposphere::Model tropoModel = &troposphere::SaastamoinenChao;
+      const auto lla = receiver.position.toWgs84();
+      auto delay = tropoModel(
+          {.latitude_rad = lla.latitude_deg * std::numbers::pi / 180.0,
+           .height_m = lla.altitude_m, //TODO: undulation is missing here!
+           .elevation_rad = elevation_rad});
+      double total_m = delay.Total();
+
       PseudorangeModel model;
       const auto prediction = model.Evaluate(
           observation, receiver, measurement.satelliteState, context);
@@ -58,9 +77,7 @@ LinearizePseudorangeEpoch(const PositioningEpoch &epoch,
           observation.code.pseudorange_m - prediction.predicted_m;
 
       CodeVarianceContext codeVarContext{
-          .elevation_rad = calcElevationIfPossible(
-              receiver.position.vector(),
-              measurement.satelliteState.Position_E.vector()),
+          .elevation_rad = optionalElvation,
           .cn0_dbhz = obs.SnrObservation
                           ? std::optional<double>{obs.SnrObservation->snr}
                           : std::nullopt};

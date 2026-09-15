@@ -3,13 +3,13 @@
 #include <iostream>
 
 int main() {
-    const constants::Lla station{
+    const Lla station{
         52.520008,
         13.404954,
         45.0,
     };
 
-    const constants::Ecef ecef = constants::lla_to_ecef(station);
+    const Ecef ecef = constants::lla_to_ecef(station);
     const gtsam::Point3 point = constants::to_gtsam_point3(ecef);
 
     std::cout << "ECEF [m]: "

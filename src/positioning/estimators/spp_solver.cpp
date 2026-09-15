@@ -37,6 +37,7 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
       result.status = SolveStatus::InvalidLinearization;
       return result;
     }
+
     if (linearizedSystem->jacobian.rows() < linearizedSystem->jacobian.cols()) {
       result.status = SolveStatus::InsufficientMeasurements;
       return result;
@@ -52,6 +53,7 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
       result.status = SolveStatus::RankDeficient;
       return result;
     }
+
     Eigen::Vector4d dx = qr.solve(weightedResiduals);
     if (!dx.allFinite()) {
       result.status = SolveStatus::NonFiniteUpdate;
@@ -63,6 +65,7 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
                                       receiver.position.z() + dx(2)};
     receiver.clockBias_m += dx(3);
 
+    // check convergence
     if (dx.head<3>().norm() < solverConfig.position_tolerance_m &&
         std::abs(dx(3)) < solverConfig.clock_tolerance_m) {
       const Eigen::Matrix4d inverseR = qr.matrixR()

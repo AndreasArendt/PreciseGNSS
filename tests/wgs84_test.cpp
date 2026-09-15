@@ -18,14 +18,14 @@ int fail(const char* label, const double expected, const double actual) {
 }  // namespace
 
 int main() {
-    const constants::Lla berlin{
+    const Lla berlin{
         52.520008,
         13.404954,
         45.0,
     };
 
-    const constants::Ecef ecef = constants::lla_to_ecef(berlin);
-    const constants::Lla round_trip = constants::ecef_to_lla(ecef);
+    const Ecef ecef = constants::lla_to_ecef(berlin);
+    const Lla round_trip = constants::ecef_to_lla(ecef);
     const gtsam::Point3 point = constants::to_gtsam_point3(ecef);
 
     if (!nearly_equal(berlin.latitude_deg, round_trip.latitude_deg, 1.0e-6)) {

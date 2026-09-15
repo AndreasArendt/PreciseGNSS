@@ -6,6 +6,10 @@ inline constexpr double GravitationalConstant__m3Ds2 = 3.986004418e14;
 inline constexpr double MeanAngularVelocityOfEarth__radDs = 7.2921151467e-5;
 inline constexpr double SpeedOfLight__mDs = 299792458.0;
 
+// Atmosphere 
+inline constexpr double UniversalGasConstant = 8.31446261815324; //R [J_D_Kmol]
+inline constexpr double MeanMolarMass_DryAir = 0.0289652;
+
 inline constexpr double WGS84SemiMajorAxis__m = 6378137.0;
 inline constexpr double WGS84Flattening = 1.0 / 298.257223563;
 inline constexpr double WGS84SemiMinorAxis__m =
