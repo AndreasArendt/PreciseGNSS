@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 namespace troposphere {
 
 struct Input {
@@ -18,6 +20,6 @@ struct Delay {
 };
 
 // A model is any function with this signature.
-using Model = Delay (*)(const Input&);
+using Model = std::optional<Delay> (*)(const Input&);
 
 } // namespace troposphere

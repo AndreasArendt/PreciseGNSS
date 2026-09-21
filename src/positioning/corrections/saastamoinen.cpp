@@ -23,15 +23,15 @@ double mapping_function__Mw_Chao(double elevation__rad) {
 }
 } // namespace
 
-troposphere::Delay troposphere::SaastamoinenChao(const Input &input) {
+std::optional<troposphere::Delay>
+troposphere::SaastamoinenChao(const Input &input) {
   constexpr double half_pi = std::numbers::pi / 2.0;
   if (!std::isfinite(input.latitude_rad) ||
       std::abs(input.latitude_rad) > half_pi ||
       !std::isfinite(input.height_m) || input.height_m < -100.0 ||
       input.height_m > 10000.0 || !std::isfinite(input.elevation_rad) ||
       input.elevation_rad <= 0.0 || input.elevation_rad > half_pi) {
-    throw std::invalid_argument(
-        "SaastamoinenChao: input outside supported domain");
+    return std::nullopt;
   }
 
   // gravity at equator - compensated by latitude
@@ -56,7 +56,7 @@ troposphere::Delay troposphere::SaastamoinenChao(const Input &input) {
   double pws = relative_humidity * saturation_pressure_hPa;
   double zwd_m = 0.0022768 * (1255.0 / Ts + 0.05) * pws;
 
-  return {.hydrostatic_m =
+  return Delay{.hydrostatic_m =
               mapping_function__Mh_Chao(input.elevation_rad) * zhd_m,
           .wet_m = mapping_function__Mw_Chao(input.elevation_rad) * zwd_m};
 }

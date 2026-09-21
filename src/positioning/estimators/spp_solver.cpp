@@ -25,13 +25,11 @@ EpochSolveResult SolveEpoch(const PositioningEpoch &epoch,
     receiver = *initial;
   }
 
-  const CorrectionContext context{};
-
   for (int iteration = 0; iteration < solverConfig.maxIterations; ++iteration) {
     result.diagnostics.iterations = iteration + 1;
 
     const auto linearizedSystem =
-        LinearizePseudorangeEpoch(epoch, receiver, context);
+        LinearizePseudorangeEpoch(epoch, receiver);
 
     if (!linearizedSystem) {
       result.status = SolveStatus::InvalidLinearization;

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <numbers>
 
 #include "coordinates/transformation.hpp"
@@ -24,8 +25,7 @@ calcElevationIfPossible(const Eigen::Vector3d &receiver_ecef,
 
 std::optional<LinearizedSystem>
 LinearizePseudorangeEpoch(const PositioningEpoch &epoch,
-                          const ReceiverState &receiver,
-                          const CorrectionContext &context) {
+                          const ReceiverState &receiver) {
   Eigen::Index row = 0;
   Eigen::Index rowCount = 0;
   for (const auto &measurement : epoch.measurements) {
@@ -42,32 +42,45 @@ LinearizePseudorangeEpoch(const PositioningEpoch &epoch,
       .variances_m2 = Eigen::VectorXd(rowCount),
   };
 
+  const auto lla = receiver.position.toWgs84();
+
   for (const auto &measurement : epoch.measurements) {
+    const auto &signals = measurement.observations.signals;
+    if (std::none_of(signals.begin(), signals.end(), [](const auto &signal) {
+          return signal.second.CodeObservation.has_value();
+        })) {
+      continue;
+    }
+
+    std::optional<double> optionalElvation =
+        calcElevationIfPossible(receiver.position.vector(),
+                                measurement.satelliteState.Position_E.vector());
+
+    double elevation_rad = optionalElvation ? *optionalElvation : 0;
+
+    troposphere::Model tropoModel = &troposphere::SaastamoinenChao;
+
+    auto tropoDelay = tropoModel(
+        {.latitude_rad = lla.latitude_deg * std::numbers::pi / 180.0,
+         .height_m = lla.altitude_m, // TODO: undulation is missing here!
+         .elevation_rad = elevation_rad});
+
     for (const auto &signal : measurement.observations.signals) {
 
-      const auto obs = signal.second;
+      const auto &obs = signal.second;
 
       if (!obs.CodeObservation)
         continue;
 
-      std::optional<double> optionalElvation = calcElevationIfPossible(
-          receiver.position.vector(),
-          measurement.satelliteState.Position_E.vector());
-
-      double elevation_rad = optionalElvation ? *optionalElvation : 0;
+      const auto tropoDelayTotal = tropoDelay ? tropoDelay->Total() : 0.0;
+      const CorrectionContext context{.troposphere_m = tropoDelayTotal,
+                                      .ionosphere_m = 0,
+                                      .groupDelay_m = 0};
 
       const CodeObservation observation{.satellite =
                                             measurement.observations.satellite,
                                         .signalId = signal.first,
                                         .code = *obs.CodeObservation};
-
-      troposphere::Model tropoModel = &troposphere::SaastamoinenChao;
-      const auto lla = receiver.position.toWgs84();
-      auto delay = tropoModel(
-          {.latitude_rad = lla.latitude_deg * std::numbers::pi / 180.0,
-           .height_m = lla.altitude_m, //TODO: undulation is missing here!
-           .elevation_rad = elevation_rad});
-      double total_m = delay.Total();
 
       PseudorangeModel model;
       const auto prediction = model.Evaluate(
