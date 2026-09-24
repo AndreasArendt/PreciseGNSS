@@ -1,5 +1,11 @@
 #include <cmath>
+#include <future>
+#include <gtsam/inference/Symbol.h>
+#include <iomanip>
 #include <iostream>
+
+#include <gtsam/geometry/Point3.h>
+#include "positioning/graph/spp_graph.hpp"
 
 #include "positioning/estimators/spp_solver.hpp"
 #include "positioning/providers/broadcast_epoch_provider.hpp"
@@ -36,20 +42,48 @@ int main(int argc, char *argv[]) {
     posEpochs.emplace_back(pEpoch);
   }
 
-  SPPSolver solver{};
-  std::vector<EpochSolveResult> sppResult = solver.Solve(posEpochs);
+  // Run independently: the graph is not initialized from the LSQ solution.
+  auto lsqTask = std::async(std::launch::async,
+                            [&] { return SPPSolver{}.Solve(posEpochs); });
 
-  int i = 0;
-  for (const auto &spp : sppResult) {
-    if (const auto &receiverState = spp.receiverState) {
-      double delta = (spp.receiverState->position -
-                      observations->approximateMarkerPosition)
-                         .norm();
-      std::cout << delta << " iter: " << spp.diagnostics.iterations << std::endl;
-    } else {
-      std::cout << "Failed epoch" << static_cast<int>(spp.status) << std::endl;
+  ReceiverState graphInitial;
+  graphInitial.position = observations->approximateMarkerPosition;
+
+  auto graphTask = std::async(std::launch::async, [&] {
+    std::vector<std::optional<double>> distances(posEpochs.size());
+    for (size_t k = 0; k < posEpochs.size(); ++k) {
+      try {
+        // SPP epochs have no temporal factors; solve each small graph
+        // separately.
+        const auto values = SppGraph{}.Solve({posEpochs[k]}, {graphInitial});
+        const auto positionKey = gtsam::Symbol('x', 0);
+        const auto &position = values.at<gtsam::Point3>(positionKey);
+        distances[k] =
+            (position - observations->approximateMarkerPosition.vector()).norm();
+      } catch (const std::exception &error) {
+        std::cerr << "Graph epoch " << k << ": " << error.what() << '\n';
+      }
     }
-    ++i;
+    return distances;
+  });
+
+  const auto lsqResults = lsqTask.get();
+  const auto graphDistances = graphTask.get();
+  std::cout << std::fixed << std::setprecision(4)
+            << "epoch | lsq [m] | factor [m] (distance to approximate marker)\n";
+  for (size_t k = 0; k < posEpochs.size(); ++k) {
+    std::cout << k << " | ";
+    if (lsqResults[k].receiverState)
+      std::cout << (lsqResults[k].receiverState->position -
+                    observations->approximateMarkerPosition).norm();
+    else
+      std::cout << "failed";
+    std::cout << " | ";
+    if (graphDistances[k])
+      std::cout << *graphDistances[k];
+    else
+      std::cout << "failed";
+    std::cout << '\n';
   }
 
   return EXIT_SUCCESS;
